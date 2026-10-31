@@ -1,0 +1,29 @@
+name: Windows desktop build (uUnityBridge)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish portable x64 EXE
+        shell: pwsh
+        run: |
+          dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
+          if (-not (Test-Path ./dist/win-x64/uUnityBridge.exe)) { throw 'Missing uUnityBridge.exe' }
+      - name: Upload unsigned build artifact for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: uUnityBridge-windows-x64-ci
+          path: dist/win-x64/
+          if-no-files-found: error
