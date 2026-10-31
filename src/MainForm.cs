@@ -10,6 +10,14 @@ internal sealed class MainForm : Form
     private bool polling;
     private int consecutiveNetworkErrors;
     private DateTimeOffset nextPollUtc = DateTimeOffset.MinValue;
+    private DateTimeOffset nextUpdateCheckUtc = DateTimeOffset.MinValue;
+    private bool updateChecking;
+    private readonly LinkLabel rollback = new()
+    {
+        Text = "↶ Откат версии", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight,
+        LinkColor = Color.FromArgb(68, 80, 118), AutoSize = false,
+        Font = new Font("Segoe UI", 10)
+    };
     private readonly ListBox patches = new() { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 11), IntegralHeight = false };
     private readonly TextBox details = new() { Dock = DockStyle.Fill, ReadOnly = true, Multiline = true,
         ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 10),
@@ -26,7 +34,7 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.3.0";
+        Text = "uUnity Bridge · PATCH / ANS · 0.4.0";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -38,8 +46,28 @@ internal sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        grid.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
+        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
+        header.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
             Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold) }, 0, 0);
+        header.Controls.Add(rollback, 1, 0);
+        rollback.Visible = ReleaseUpdater.BackupAvailable();
+        rollback.LinkClicked += (_, _) =>
+        {
+            try
+            {
+                if (!ReleaseUpdater.LaunchRollback()) return;
+                poller.Stop();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                status.Text = "Откат не запущен";
+                details.Text = ex.Message;
+            }
+        };
+        grid.Controls.Add(header, 0, 0);
         var buttons = new TableLayoutPanel { ColumnCount = 1, Dock = DockStyle.Fill };
         buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         buttons.Controls.Add(copy, 0, 0);
@@ -54,7 +82,9 @@ internal sealed class MainForm : Form
         copy.Click += (_, _) => CopyNotification();
         poller.Tick += async (_, _) =>
         {
+            if (polling || updateChecking) return;
             if (DateTimeOffset.UtcNow >= nextPollUtc) await PollOnceAsync();
+            if (DateTimeOffset.UtcNow >= nextUpdateCheckUtc) await CheckForUpdateAsync();
         };
         FormClosed += (_, _) => poller.Stop();
 
@@ -70,7 +100,9 @@ internal sealed class MainForm : Form
                     "Новые разрешённые PATCH применяются, ответы ANS публикуются, завершённые Issues закрываются.\r\n" +
                     "Кнопка ОТЧЁТ доступна только при новых опубликованных результатах.\r\n" +
                     "В публичном GitHub не выполняются произвольные команды или установщики.";
+                ReleaseUpdater.ConfirmWindowReady(Environment.GetCommandLineArgs().Skip(1).ToArray());
                 await PollOnceAsync();
+                await CheckForUpdateAsync();
                 poller.Start();
             }
             catch (Exception e)
@@ -118,6 +150,37 @@ internal sealed class MainForm : Form
                 catch { copy.Enabled = false; }
                 poller.Start();
             }
+        }
+    }
+
+    private async Task CheckForUpdateAsync()
+    {
+        if (updateChecking || polling || DateTimeOffset.UtcNow < nextUpdateCheckUtc) return;
+        updateChecking = true;
+        poller.Stop();
+        // A release is a separate trusted distribution channel, never an Issue action.
+        nextUpdateCheckUtc = DateTimeOffset.UtcNow.AddMinutes(30);
+        try
+        {
+            if (await ReleaseUpdater.CheckAndLaunchAsync())
+            {
+                status.Text = "Подготовлено проверенное обновление EXE. Перезапуск...";
+                Close();
+                return;
+            }
+            rollback.Visible = ReleaseUpdater.BackupAvailable();
+        }
+        catch (Exception e)
+        {
+            // Never terminate the working version due to a release/network error.
+            nextUpdateCheckUtc = DateTimeOffset.UtcNow.AddMinutes(30);
+            details.Text = "Проверка обновлений: " + e.Message +
+                "\\r\\n\\r\\nТекущая версия продолжает работать.";
+        }
+        finally
+        {
+            updateChecking = false;
+            if (!IsDisposed && !Disposing) poller.Start();
         }
     }
 
@@ -278,7 +341,7 @@ internal sealed class MainForm : Form
         status.Text = $"ANS отправлено: {sent}. Issues закрыто: {closed}.";
         details.Text = last == null ? "Новых ответов нет." :
             $"ANS {last.Id} — {last.State}\r\n\r\n{last.AnswerUrl}\r\n\r\n" +
-            "Нажмите «СКОПИРОВАТЬ» для короткого сообщения в ChatGPT.";
+            "Нажмите «ОТЧЁТ», чтобы скопировать новые ответы для ChatGPT.";
     }
 
     private void CopyNotification()
