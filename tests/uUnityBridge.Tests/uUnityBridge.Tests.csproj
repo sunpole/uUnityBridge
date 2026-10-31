@@ -11,5 +11,6 @@
     <Compile Include="../../src/PatchHistory.cs" Link="PatchHistory.cs" />
     <Compile Include="../../src/PatchWorkflow.cs" Link="PatchWorkflow.cs" />
     <Compile Include="../../src/ReportInbox.cs" Link="ReportInbox.cs" />
+    <Compile Include="../../src/ReleaseUpdater.cs" Link="ReleaseUpdater.cs" />
   </ItemGroup>
 </Project>
