@@ -161,7 +161,7 @@ internal static class ReleaseUpdater
         catch { /* Helper will rollback if confirmation cannot be written. */ }
     }
 
-    private static bool TryVersion(string tag, out Version version)
+    internal static bool TryVersion(string tag, out Version version)
     {
         version = new Version(0, 0);
         return Regex.IsMatch(tag, @"^v\d+\.\d+\.\d+$",
