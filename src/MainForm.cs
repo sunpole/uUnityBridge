@@ -175,7 +175,7 @@ internal sealed class MainForm : Form
             // Never terminate the working version due to a release/network error.
             nextUpdateCheckUtc = DateTimeOffset.UtcNow.AddMinutes(30);
             details.Text = "Проверка обновлений: " + e.Message +
-                "\\r\\n\\r\\nТекущая версия продолжает работать.";
+                "\r\n\r\nТекущая версия продолжает работать.";
         }
         finally
         {
