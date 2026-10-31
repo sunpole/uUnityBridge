@@ -92,12 +92,23 @@ internal static class ReleaseUpdater
             RegexOptions.CultureInvariant);
         if (!match.Success) throw new InvalidDataException("SHA256 имеет неверный формат.");
         string expected = match.Groups["sha"].Value;
+        string blockedShaPath = Path.Combine(UpdateRoot, "blocked-sha256.txt");
+        if (File.Exists(blockedShaPath) &&
+            string.Equals(File.ReadAllText(blockedShaPath).Trim(), expected, StringComparison.OrdinalIgnoreCase))
+            return false; // A failed or manually rolled back release must not loop forever.
         using (var stream = File.OpenRead(candidate))
         {
             if (!string.Equals(Convert.ToHexString(SHA256.HashData(stream)), expected,
                 StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("SHA256 не совпадает. Обновление отклонено.");
         }
+
+        var fileVersion = FileVersionInfo.GetVersionInfo(candidate).FileVersion;
+        if (!Version.TryParse(fileVersion, out var embeddedVersion) ||
+            embeddedVersion.Major != newest!.Major ||
+            embeddedVersion.Minor != newest.Minor ||
+            embeddedVersion.Build != newest.Build)
+            throw new InvalidDataException("Внутренняя версия EXE не соответствует GitHub Release.");
 
         var info = new ProcessStartInfo(HelperPath) { UseShellExecute = false,
             WorkingDirectory = AppContext.BaseDirectory };
