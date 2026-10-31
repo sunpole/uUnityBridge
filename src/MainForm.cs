@@ -34,7 +34,7 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.4.0";
+        Text = "uUnity Bridge · PATCH / ANS · 0.4.1";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -339,9 +339,12 @@ internal sealed class MainForm : Form
 
         var last = history.Values.Where(r => r.Posted).OrderByDescending(r => r.Number).FirstOrDefault();
         status.Text = $"ANS отправлено: {sent}. Issues закрыто: {closed}.";
-        details.Text = last == null ? "Новых ответов нет." :
-            $"ANS {last.Id} — {last.State}\r\n\r\n{last.AnswerUrl}\r\n\r\n" +
-            "Нажмите «ОТЧЁТ», чтобы скопировать новые ответы для ChatGPT.";
+        // Do not display a stale ANS after a poll with no new results.
+        details.Text = sent == 0
+            ? "Синхронизация завершена. Новых ответов ANS нет.\r\n" +
+              "Кнопка «ОТЧЁТ» активируется при появлении нового результата."
+            : $"ANS {last!.Id} — {last.State}\r\n\r\n{last.AnswerUrl}\r\n\r\n" +
+              "Нажмите «ОТЧЁТ», чтобы скопировать новые ответы для ChatGPT.";
     }
 
     private void CopyNotification()
