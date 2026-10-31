@@ -7,7 +7,7 @@ namespace uUnityBridge;
 // New optional fields keep v0.2 answers.json readable during migration.
 internal sealed record PatchReceipt(int Number, string Id, string State, string Summary,
     string IssueUrl, bool Posted, string? AnswerUrl,
-    string? Fingerprint = null, int Attempts = 1, DateTimeOffset? UpdatedAt = null);
+    string? Fingerprint = null, int Attempts = 1, DateTimeOffset? UpdatedAt = null, bool Closed = false);
 
 internal static class PatchHistory
 {
