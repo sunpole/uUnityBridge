@@ -113,6 +113,33 @@ internal static class BridgeGitHub
         }
         return await ProcessRunner.RunAsync("gh", ["issue", "comment", patch.Number.ToString(), "-R", Repo, "--body", report], timeoutSeconds: 50);
     }
+
+    internal static async Task<string> SendAnswerAsync(int issueNumber, string patchId, string report)
+    {
+        if (issueNumber <= 0 || !System.Text.RegularExpressions.Regex.IsMatch(patchId, "^P[0-9]{4,6}$"))
+            throw new ArgumentOutOfRangeException(nameof(issueNumber));
+        await EnsureAuthAsync();
+        var json = await ProcessRunner.RunAsync("gh", ["issue", "view", issueNumber.ToString(), "-R", Repo,
+            "--json", "author,title,comments"], timeoutSeconds: 50);
+        using var doc = JsonDocument.Parse(json);
+        var issue = doc.RootElement;
+        var author = issue.GetProperty("author").GetProperty("login").GetString();
+        var title = issue.GetProperty("title").GetString();
+        if (!string.Equals(author, TrustedAuthor, StringComparison.OrdinalIgnoreCase) || title != $"[PATCH {patchId}]")
+            throw new InvalidOperationException("Issue не принадлежит доверенному автору или название изменено.");
+
+        // Check GitHub before posting so an interrupted previous send does not duplicate ANS.
+        foreach (var comment in issue.GetProperty("comments").EnumerateArray())
+        {
+            if (comment.GetProperty("author").GetProperty("login").GetString() != TrustedAuthor) continue;
+            var body = comment.GetProperty("body").GetString() ?? "";
+            if (!body.StartsWith($"## ANS {patchId} — ", StringComparison.Ordinal)) continue;
+            return comment.TryGetProperty("url", out var u) ? (u.GetString() ?? "") : "";
+        }
+        return await ProcessRunner.RunAsync("gh", ["issue", "comment", issueNumber.ToString(), "-R", Repo,
+            "--body", report], timeoutSeconds: 50);
+    }
+
 }
 
 internal static class GitPatch

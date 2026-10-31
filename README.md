@@ -1,49 +1,41 @@
-# uUnityBridge · Windows desktop patch transport
+# uUnityBridge 0.2.0 — Windows desktop PATCH / ANS
 
-An early **Windows Forms .NET 8** prototype for exchanging `PATCH` / `ANS` messages via public GitHub Issues and applying tightly restricted, Git-verified source updates.
+**Предварительная версия.** Исходники подготовлены; компиляция и GUI версии 0.2.0 на Windows должны быть подтверждены локальным тестом. Репозиторий публичный: `sunpole/uUnityBridge`.
 
-**Status: prototype, source written but Windows build and GUI are NOT verified yet.** It is not a fully tested installer/updater or Unity integration.
+## Три кнопки
 
-## Buttons
+1. **ИЗ ЧАТА** — получить все открытые PATCH-задания из GitHub Issues, оставить только созданные `sunpole` и по порядку автоматически обработать новые допустимые задания. Обработанные задания повторно не выполняются.
+2. **ПЕРЕДАТЬ ЧАТУ** — опубликовать короткий ответ `ANS P0001 — PASS/FAIL` на каждый локально обработанный, но ещё не отправленный патч. Если соединение прервалось, ранее отправленные и сохранённые ответы не публикуются повторно.
+3. **СКОПИРОВАТЬ** — скопировать одну строку о последнем опубликованном ANS для вставки в ChatGPT.
 
-- **В ЧАТ →** — send a minimal, de-identified status message as a GitHub Issue or reply to a selected PATCH issue.
-- **← ИЗ ЧАТА** — retrieve open issues titled `[PATCH P0001]` authored by `sunpole`, parse schema-controlled JSON.
-- **ПРИМЕНИТЬ ПАТЧ** — only `report-only` or trusted `sync-main`, verified against an exact SHA and `origin/main`. Posts ANS automatically.
+Очередь результатов хранится локально в `%LOCALAPPDATA%\uUnityBridge\answers.json` (без токенов и личных путей). Кнопка получения не публикует отчёты, пока пользователь не нажмёт «ПЕРЕДАТЬ ЧАТУ». После ошибки выполнение следующего патча останавливается. Невалидная история останавливает обработку, чтобы не выполнять задания повторно.
 
-## Requirements
+## Безопасность
 
-- Windows 10/11 x64
-- `.NET 8 SDK` for build
-- Git and GitHub CLI (`gh`) installed
-- Authenticated GitHub CLI account `sunpole` (`gh auth status`; native/browser auth if needed)
-- Public GitHub repository `sunpole/uUnityBridge` created by owner
+- Только GitHub Issues от `sunpole`, авторизованный `gh` тоже `sunpole`.
+- Только `report-only` и `sync-main` до точного SHA в `origin/main` при чистом рабочем дереве и совпадении удалённого репозитория.
+- Никакие команды из публичных Issues не запускаются. В публичный ANS отправляются только номер, PASS/FAIL и короткая предопределённая фраза.
+- `sync-main` обновляет **исходники**, не заменяет запущенный EXE и не выполняет произвольные сборочные скрипты.
+- Нет фонового отслеживания GitHub и нет самообновления бинарного EXE в 0.2.0.
 
-## Build and launch
+## Сборка
 
-In PowerShell, from the extracted folder, run:
-
-```powershell
-& '.\Build-And-Start.ps1'
-```
-
-This compiles a self-contained Windows EXE inside `dist/win-x64`, creates a desktop shortcut (if not already present), and launches it. No software is installed; no elevation needed. If the SDK cannot restore the runtime packs, report the exact error.
-
-To create the new PUBLIC GitHub repository explicitly, after inspecting files and ensuring no personal data is present:
+Для локальной сборки нужен Windows 10/11 x64, .NET 8 SDK, Git, GitHub CLI с авторизацией. Пример из корня проекта:
 
 ```powershell
-& '.\Build-And-Start.ps1' -PublishPublic
+dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
 ```
 
-Only the allowlisted project files are staged for the first commit. If the repository or local `.git` exists, publishing is aborted rather than overwriting it.
+Для обновления установленной 0.1.0 на 0.2.0 используйте поставляемый отдельно `Apply-Update.ps1`: он проверяет чистоту нужных исходников и Git, создаёт резервную копию, собирает EXE и отправляет коммит в публичный `sunpole/uUnityBridge`. Перед публикацией проверьте содержимое ZIP.
 
-## Security and honest limits
+## Проверка
 
-The public repo is not a trustworthy instruction source by itself. Only issues from `sunpole` are considered, and those cannot provide arbitrary shell commands. Git updates refuse dirty worktrees and non-fast-forward operations and preserve a named rollback branch.
+1. Запустить GUI и убедиться, что кнопок ровно три.
+2. «ИЗ ЧАТА»: получить P0001, проверить результат PASS для `report-only`.
+3. Повторно нажать «ИЗ ЧАТА»: повторной обработки не должно быть.
+4. «ПЕРЕДАТЬ ЧАТУ»: увидеть ANS P0001 в GitHub Issue.
+5. Повторно нажать «ПЕРЕДАТЬ ЧАТУ»: повторного комментария быть не должно.
+6. «СКОПИРОВАТЬ»: вставить строку в ChatGPT.
+7. Перезапустить GUI: история должна сохраниться и патч не должен примениться вновь.
 
-**This prototype has not been built/tested on the user's Windows PC.** It cannot install Unity or automatically execute arbitrary changes. For a complete unattended updater and Unity automation, add signed releases, QA, rollback and Unity CLI/Pipeline integration in later iterations.
-
-Official references: https://cli.github.com/manual/gh_issue_list ; https://cli.github.com/manual/gh_issue_comment ; https://docs.unity.com/en-us/unity-cli
-
-## CI
-
-A Windows build workflow runs on push to `main` and attaches a test-only artifact to the GitHub Actions run. A successful CI build **does not prove the app is fully functional**; the UI and GitHub operations need local QA. No automatic release or silent binary update exists yet.
+Workflow GitHub Actions на `main` отдельно проверяет сборку Windows, но CI не заменяет графическое и интеграционное QA.

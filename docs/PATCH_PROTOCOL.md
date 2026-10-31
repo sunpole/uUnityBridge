@@ -1,49 +1,33 @@
-# uUnityBridge PATCH / ANS v1
+# uUnityBridge PATCH / ANS v0.2
 
-## GitHub transport
+Публичный репозиторий: `sunpole/uUnityBridge`.
 
-Public repo: `sunpole/uUnityBridge`.
-
-Commands: GitHub Issues that have *exact* title `[PATCH P0001]` and were authored by `sunpole`. The issue body must be valid JSON (or a single fenced JSON block).
+Патч: GitHub Issue от `sunpole` с точным заголовком `[PATCH P0001]` и JSON:
 
 ```json
 {
   "schema": "uub.patch.v1",
   "id": "P0001",
   "action": "report-only",
-  "description": "Проверка связи ChatGPT — GitHub — локальная программа"
+  "description": "Проверка обмена сообщениями"
 }
 ```
 
-For a source update, first merge trusted changes into `main`, then determine the exact 40-character SHA of `main` and publish:
+Для обновления исходников `sync-main` дополнительно указывается полный 40-символьный SHA в поле `commit`.
 
-```json
-{
-  "schema": "uub.patch.v1",
-  "id": "P0002",
-  "action": "sync-main",
-  "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "description": "Обновить локальные исходники до указанного коммита main"
-}
-```
+## Три действия интерфейса
 
-Replace illustrative SHA with the actual Git commit SHA. The client refuses mismatches.
+- **ИЗ ЧАТА** загружает все новые допустимые патчи по возрастанию номера Issue, применяет их и сохраняет локальную запись PASS/FAIL. При первой ошибке цепочка останавливается.
+- **ПЕРЕДАТЬ ЧАТУ** публикует отдельный комментарий `ANS Pxxxx — PASS/FAIL` к соответствующему Issue, отмечает результат отправленным после успеха GitHub CLI.
+- **СКОПИРОВАТЬ** формирует краткое уведомление об уже отправленном ANS и копирует его в буфер обмена.
 
-## Local execution policy
+Локальная история находится в `%LOCALAPPDATA%\uUnityBridge\answers.json`. Повторное получение не применяет номера Issue из истории. При повреждении истории операции прекращаются (без автоматической очистки истории).
 
-- GitHub issue author must be exactly `sunpole`.
-- Local gh login must be `sunpole`.
-- `sync-main` only works on clean local `main`, in the `sunpole/uUnityBridge` repository.
-- Exact remote `origin/main` SHA must equal the patch SHA.
-- A `checkpoint/P0002-<timestamp>` branch is created before a fast-forward merge.
-- No arbitrary commands are executed from issue text. No PowerShell evaluation. No install, system security changes or auto-merge.
-- Upon clicking Apply, result is posted as a public GitHub Issue comment (`ANS`). Reports intentionally include only minimal safe diagnostics.
-- If local files are modified, the operation stops. Untracked files also block it.
+## Ограничения безопасности
 
-## Limitations
-
-- This is a source-code synchronizer and public status messenger, not yet a fully verified binary self-updater or unattended code executor.
-- GitHub connectivity is user-initiated; no background polling.
-- Running the result of remote source updates still requires a separate build/QA step.
-- Public issues and comments are visible to anyone. Never attach full logs, personal paths, secrets or access tokens.
-- The official Unity CLI/Pipeline/MCP connection is a separate, later integration, after installed Unity 6.x and actual tests.
+- Автор Issue и вошедший в `gh` пользователь — только `sunpole`.
+- Только `report-only` и проверенный `sync-main`; произвольный код и команды из Issue не выполняются.
+- Обновление проверяет remote, ветку, чистоту дерева и точный SHA, сохраняет Git checkpoint, затем делает только fast-forward.
+- Публичный ANS не содержит stdout/stderr, локальные пути, токены, hostname или пользовательские данные.
+- Нет незаметного выполнения установщиков, системных изменений, скриптов PowerShell из Issue.
+- `sync-main` обновляет только Git-исходники, не автоматически запущенный EXE. Полноценный бинарный апдейтер требует отдельной реализации и тестирования.
