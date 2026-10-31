@@ -191,10 +191,10 @@ internal sealed class MainForm : Form
         // Separate closing from publishing. A network failure during closing must not
         // cause an already-published ANS to be duplicated.
         foreach (var receipt in history.Values.Where(r =>
-            r.Posted && !r.Closed && PatchWorkflow.IsSuccess(r)).OrderBy(r => r.Number).ToList())
+            r.Posted && !r.Closed && (PatchWorkflow.IsSuccess(r) || r.State == "BLOCKED")).OrderBy(r => r.Number).ToList())
         {
             status.Text = $"Закрытие завершённого PATCH {receipt.Id}...";
-            await BridgeGitHub.CloseCompletedPatchAsync(receipt.Number, receipt.Id);
+            await BridgeGitHub.CloseFinishedPatchAsync(receipt.Number, receipt.Id, PatchWorkflow.IsSuccess(receipt));
             history[receipt.Number] = receipt with { Closed = true, UpdatedAt = DateTimeOffset.UtcNow };
             PatchHistory.Save(history);
             closed++;
