@@ -1,4 +1,8 @@
-# uUnityBridge 0.2.0 — Windows desktop PATCH / ANS
+# uUnityBridge 0.2.1 — Windows desktop PATCH / ANS
+
+**P0002 preview (in feature branch until CI and local QA).** Queue receipts, bounded retries, ANS deduplication and auto-close on confirmed completion. See [P0002 acceptance](docs/P0002_ACCEPTANCE.md), [future MCP/API](docs/LOCAL_API_MCP.md), and [one-time DeepSeek $5 trial](docs/DEEPSEEK_TRIAL.md).
+
+The app still has **no inbound MCP or REST API**, **no executable self-updater**, and **no DeepSeek connection**. Do not confuse SOURCE_UPDATED with an EXE release.
 
 **Предварительная версия.** Исходники подготовлены; компиляция и GUI версии 0.2.0 на Windows должны быть подтверждены локальным тестом. Репозиторий публичный: `sunpole/uUnityBridge`.
 

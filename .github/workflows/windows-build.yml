@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -21,6 +23,10 @@ jobs:
         run: |
           dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
           if (-not (Test-Path ./dist/win-x64/uUnityBridge.exe)) { throw 'Missing uUnityBridge.exe' }
+      - name: Test patch state machine and ledger
+        shell: pwsh
+        run: |
+          dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
       - name: Upload unsigned build artifact for testing
         uses: actions/upload-artifact@v4
         with:

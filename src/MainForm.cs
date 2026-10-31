@@ -24,7 +24,7 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.2.0";
+        Text = "uUnity Bridge · PATCH / ANS · 0.2.1";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -70,6 +70,10 @@ internal sealed class MainForm : Form
     {
         var history = PatchHistory.Load();
         var list = await BridgeGitHub.GetPatchesAsync();
+        if (list.GroupBy(p => p.Id).Any(g => g.Count() != 1))
+            throw new InvalidOperationException("В GitHub обнаружены повторные идентификаторы PATCH. Ничего не применено.");
+        if (list.Count > 5)
+            throw new InvalidOperationException("Открыто более пяти PATCH: очередь переполнена. Сначала завершите текущие задания.");
         patches.DataSource = null;
         patches.DataSource = list;
 
@@ -77,74 +81,130 @@ internal sealed class MainForm : Form
         int skipped = 0;
         foreach (var patch in list)
         {
-            if (history.ContainsKey(patch.Number)) { skipped++; continue; }
-            status.Text = $"{patch.Id}: применение...";
-            string state;
-            string technical;
-            string summary;
+            history.TryGetValue(patch.Number, out var previous);
+            if (previous != null && !PatchWorkflow.Matches(patch, previous))
+            {
+                status.Text = $"{patch.Id}: CONFLICT. Обработка остановлена.";
+                details.Text = "Патч был изменён после получения либо история не соответствует Issue. " +
+                    "Автоматическое повторное применение запрещено. Проверьте историю локально.";
+                return;
+            }
+            if (previous?.State == "APPLYING")
+            {
+                history[patch.Number] = previous with
+                {
+                    State = "NEEDS_REVIEW",
+                    Summary = "Прошлый запуск прервался во время применения: требуется проверка Git",
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                PatchHistory.Save(history);
+                status.Text = $"{patch.Id}: NEEDS_REVIEW. Очередь остановлена.";
+                details.Text = "Возможное прерывание во время применения. Никаких повторных изменений не выполнено.";
+                return;
+            }
+            if (previous?.State is "BLOCKED" or "NEEDS_REVIEW")
+            {
+                status.Text = $"{patch.Id}: {previous.State}. Очередь остановлена.";
+                details.Text = "Для продолжения требуется устранить причину блокировки. Автоматический сброс истории запрещён.";
+                return;
+            }
+            if (!PatchWorkflow.ShouldAttempt(previous))
+            {
+                skipped++;
+                continue;
+            }
+
+            int attempt = (previous?.Attempts ?? 0) + 1;
+            var receipt = new PatchReceipt(patch.Number, patch.Id, "APPLYING",
+                "Применение ещё не завершено", patch.Url, false, null,
+                PatchWorkflow.Fingerprint(patch), attempt, DateTimeOffset.UtcNow);
+            history[patch.Number] = receipt;
+            PatchHistory.Save(history); // Persist intent BEFORE changing Git.
+
+            status.Text = $"{patch.Id}: попытка {attempt}/{PatchWorkflow.MaxAttempts}...";
+            string state, technical, summary;
             try
             {
                 technical = await GitPatch.ApplyAsync(patch);
-                state = "PASS";
-                summary = patch.Action == "report-only" ? "Проверка выполнена; изменения не требовались"
-                    : "Проверенное обновление исходников выполнено";
+                state = patch.Action == "report-only" ? "PASS" : "SOURCE_UPDATED";
+                summary = patch.Action == "report-only"
+                    ? "Проверка выполнена; файловых изменений нет"
+                    : "Исходники обновлены; EXE и QA не запускались";
             }
             catch (Exception ex)
             {
-                state = "FAIL";
-                technical = ex.Message; // Local only. Never publish raw exception details.
-                summary = "Патч не выполнен; подробности доступны локально";
+                technical = ex.Message; // Local only, never published verbatim.
+                state = attempt >= PatchWorkflow.MaxAttempts ? "BLOCKED" : "FAIL";
+                summary = state == "BLOCKED"
+                    ? "Три попытки неуспешны; автоматические повторы остановлены"
+                    : "Ошибка применения; возможен повтор нажатием «ИЗ ЧАТА»";
             }
-            history[patch.Number] = new PatchReceipt(patch.Number, patch.Id, state, summary,
-                patch.Url, false, null);
-            PatchHistory.Save(history); // Persist before moving to the next patch.
-            completed++;
-            details.Text = $"{patch.Id} · {state}\r\n\r\n{technical}\r\n\r\n" +
-                           "Результат сохранён локально. Нажмите «ПЕРЕДАТЬ ЧАТУ» для публикации ANS.";
-            if (state == "FAIL")
+
+            history[patch.Number] = receipt with
             {
-                status.Text = $"{patch.Id}: FAIL. Следующие задания остановлены.";
-                return; // Fail closed: later patches may depend on this one.
+                State = state,
+                Summary = summary,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            PatchHistory.Save(history);
+            completed++;
+            details.Text = $"{patch.Id} · {state}\r\nПопытка {attempt}/{PatchWorkflow.MaxAttempts}\r\n\r\n" +
+                technical + "\r\n\r\nПодробная ошибка остаётся только на этом компьютере.";
+
+            if (state is "FAIL" or "BLOCKED")
+            {
+                status.Text = $"{patch.Id}: {state}. Следующие задания остановлены.";
+                return;
             }
         }
-
         if (completed == 0)
-            details.Text = list.Count == 0 ? "Новых доверенных патчей нет." : "Новых патчей нет: все найденные уже обработаны.";
-        status.Text = $"Новых обработано: {completed}. Ранее обработано: {skipped}. " +
-                      $"Ответов к отправке: {history.Values.Count(x => !x.Posted)}.";
+            details.Text = list.Count == 0 ? "Открытых патчей нет." : "Новых патчей нет: всё уже обработано.";
+        status.Text = $"Обработано: {completed}. Пропущено: {skipped}. " +
+            $"Готовых ANS: {history.Values.Count(r => !r.Posted && PatchWorkflow.IsSendable(r))}.";
     }
 
     private async Task PublishAnswersAsync()
     {
         var history = PatchHistory.Load();
-        var pending = history.Values.Where(x => !x.Posted).OrderBy(x => x.Number).ToList();
-        if (pending.Count == 0)
-        {
-            status.Text = "Новых ответов для GitHub нет.";
-            details.Text = "Сначала нажмите «ИЗ ЧАТА», если ожидаются новые патчи.";
-            return;
-        }
-        int count = 0;
+        var pending = history.Values.Where(r => !r.Posted && PatchWorkflow.IsSendable(r))
+            .OrderBy(r => r.Number).ToList();
+        int sent = 0, closed = 0;
         foreach (var receipt in pending)
         {
-            status.Text = $"Публикация ANS {receipt.Id}...";
-            // Only the ID, status, and a vetted summary go into the public repository.
+            status.Text = $"Отправка ANS {receipt.Id}...";
             string report = $"## ANS {receipt.Id} — {receipt.State}\n\n" +
-                            $"Результат: {receipt.Summary}.\n" +
-                            "Источник: uUnityBridge Desktop.\n";
-            var url = await BridgeGitHub.SendAnswerAsync(receipt.Number, receipt.Id, report);
+                $"Результат: {receipt.Summary}.\n" +
+                $"Попытка: {receipt.Attempts}/{PatchWorkflow.MaxAttempts}.\n" +
+                "Источник: uUnityBridge Desktop.\n";
+            string marker = PatchWorkflow.AnswerMarker(receipt);
+            var url = await BridgeGitHub.SendAnswerAsync(receipt.Number, receipt.Id, report, marker);
             history[receipt.Number] = receipt with
             {
                 Posted = true,
-                AnswerUrl = string.IsNullOrWhiteSpace(url) ? receipt.IssueUrl : url
+                AnswerUrl = string.IsNullOrWhiteSpace(url) ? receipt.IssueUrl : url,
+                UpdatedAt = DateTimeOffset.UtcNow
             };
-            PatchHistory.Save(history);
-            count++;
+            PatchHistory.Save(history); // Never post again on a retry after a partial success.
+            sent++;
         }
-        var last = history.Values.Where(x => x.Posted).OrderByDescending(x => x.Number).First();
-        status.Text = $"Отправлено ответов ANS: {count}. Последний: {last.Id} — {last.State}.";
-        details.Text = $"ANS {last.Id} — {last.State}\r\n\r\n{last.AnswerUrl}\r\n\r\n" +
-                       "Теперь нажмите «СКОПИРОВАТЬ» и вставьте короткий текст в чат.";
+
+        // Separate closing from publishing. A network failure during closing must not
+        // cause an already-published ANS to be duplicated.
+        foreach (var receipt in history.Values.Where(r =>
+            r.Posted && !r.Closed && (PatchWorkflow.IsSuccess(r) || r.State == "BLOCKED")).OrderBy(r => r.Number).ToList())
+        {
+            status.Text = $"Закрытие завершённого PATCH {receipt.Id}...";
+            await BridgeGitHub.CloseFinishedPatchAsync(receipt.Number, receipt.Id, PatchWorkflow.IsSuccess(receipt));
+            history[receipt.Number] = receipt with { Closed = true, UpdatedAt = DateTimeOffset.UtcNow };
+            PatchHistory.Save(history);
+            closed++;
+        }
+
+        var last = history.Values.Where(r => r.Posted).OrderByDescending(r => r.Number).FirstOrDefault();
+        status.Text = $"ANS отправлено: {sent}. Issues закрыто: {closed}.";
+        details.Text = last == null ? "Новых ответов нет." :
+            $"ANS {last.Id} — {last.State}\r\n\r\n{last.AnswerUrl}\r\n\r\n" +
+            "Нажмите «СКОПИРОВАТЬ» для короткого сообщения в ChatGPT.";
     }
 
     private void CopyNotification()

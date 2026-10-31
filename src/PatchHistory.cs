@@ -1,10 +1,13 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace uUnityBridge;
 
+// New optional fields keep v0.2 answers.json readable during migration.
 internal sealed record PatchReceipt(int Number, string Id, string State, string Summary,
-    string IssueUrl, bool Posted, string? AnswerUrl);
+    string IssueUrl, bool Posted, string? AnswerUrl,
+    string? Fingerprint = null, int Attempts = 1, DateTimeOffset? UpdatedAt = null, bool Closed = false);
 
 internal static class PatchHistory
 {
@@ -12,16 +15,24 @@ internal static class PatchHistory
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "uUnityBridge");
     private static readonly string FilePath = Path.Combine(Root, "answers.json");
 
+    internal static Dictionary<int, PatchReceipt> Parse(string json)
+    {
+        var items = JsonSerializer.Deserialize<List<PatchReceipt>>(json)
+            ?? throw new InvalidDataException("История заданий пуста или повреждена.");
+        if (items.Any(x => x.Number <= 0 || !Regex.IsMatch(x.Id, "^P[0-9]{4,6}$")
+             || x.Attempts is < 1 or > PatchWorkflow.MaxAttempts
+             || x.State is not ("PASS" or "FAIL" or "APPLYING" or "SOURCE_UPDATED" or "BLOCKED" or "NEEDS_REVIEW"))
+             || items.Select(x => x.Number).Distinct().Count() != items.Count
+             || items.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != items.Count)
+            throw new InvalidDataException("История содержит некорректные или повторяющиеся задания.");
+        return items.ToDictionary(x => x.Number);
+    }
+
     internal static Dictionary<int, PatchReceipt> Load()
     {
         if (!File.Exists(FilePath)) return new Dictionary<int, PatchReceipt>();
-        var items = JsonSerializer.Deserialize<List<PatchReceipt>>(File.ReadAllText(FilePath, Encoding.UTF8))
-                    ?? throw new InvalidDataException("Пустая локальная история патчей.");
-        // An invalid ledger must stop processing; otherwise a patch could be applied twice.
-        if (items.Any(x => x.Number <= 0 || !System.Text.RegularExpressions.Regex.IsMatch(x.Id, "^P[0-9]{4,6}$")) ||
-            items.Select(x => x.Number).Distinct().Count() != items.Count)
-            throw new InvalidDataException("Локальная история патчей повреждена. Применение остановлено.");
-        return items.ToDictionary(x => x.Number);
+        // Do not silently clear a corrupted ledger: replaying a patch can change files twice.
+        return Parse(File.ReadAllText(FilePath, Encoding.UTF8));
     }
 
     internal static void Save(Dictionary<int, PatchReceipt> history)
@@ -31,9 +42,13 @@ internal static class PatchHistory
         try
         {
             var data = history.Values.OrderBy(x => x.Number).ToArray();
-            File.WriteAllText(temp, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }),
-                new UTF8Encoding(false));
-            File.Move(temp, FilePath, overwrite: true);
+            string serialized = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+            Parse(serialized); // Check before replacing any user data.
+            File.WriteAllText(temp, serialized, new UTF8Encoding(false));
+            if (File.Exists(FilePath))
+                File.Replace(temp, FilePath, FilePath + ".bak"); // Atomic replacement; preserve previous state.
+            else
+                File.Move(temp, FilePath);
         }
         finally
         {
