@@ -13,6 +13,7 @@ internal static class Program
     private static readonly string BackupDir = Path.Combine(AppData, "backups");
     private static readonly string LastGoodPath = Path.Combine(BackupDir, "last-good.json");
     private static readonly string LogPath = Path.Combine(AppData, "updater-last.txt");
+    private static readonly string BlockedShaPath = Path.Combine(AppData, "updates", "blocked-sha256.txt");
 
     // Call only with fixed local arguments produced by the desktop client.
     static int Main(string[] args)
@@ -101,6 +102,7 @@ internal static class Program
             }
             File.Copy(backup, target, overwrite: true);
             if (Hash(target) != last.BackupSha256) throw new IOException("Контроль отката не прошёл.", e);
+            BlockVersion(expectedSha);
             Log("ROLLED BACK after failed update: " + e.Message);
             Start(target, null);
         }
@@ -117,8 +119,10 @@ internal static class Program
                 Path.GetFullPath(BackupDir) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
             !File.Exists(manifest.BackupPath) || Hash(manifest.BackupPath) != manifest.BackupSha256)
             throw new InvalidDataException("Резервная версия отсутствует либо повреждена.");
+        string rolledBackFrom = Hash(target);
         File.Copy(manifest.BackupPath, target, overwrite: true);
         if (Hash(target) != manifest.BackupSha256) throw new IOException("Контрольная сумма отката не совпадает.");
+        BlockVersion(rolledBackFrom);
         Log("MANUAL ROLLBACK: " + Path.GetFileName(manifest.BackupPath));
         Start(target, null);
     }
@@ -167,6 +171,16 @@ internal static class Program
 
     private static string Hash(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
+
+    private static void BlockVersion(string sha)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(BlockedShaPath)!);
+            File.WriteAllText(BlockedShaPath, sha.ToLowerInvariant());
+        }
+        catch { /* Failure is logged by the outer updater when necessary. */ }
+    }
 
     private static void Log(string message)
     {
