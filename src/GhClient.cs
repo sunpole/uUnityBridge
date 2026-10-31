@@ -59,7 +59,7 @@ internal static class BridgeGitHub
     internal static async Task<List<Patch>> GetPatchesAsync()
     {
         await EnsureAuthAsync();
-        string json = await ProcessRunner.RunAsync("gh", ["issue", "list", "-R", Repo, "--state", "open", "--limit", "100", "--json", "number,title,author,body,url"], timeoutSeconds: 45);
+        string json = await ProcessRunner.RunAsync("gh", ["issue", "list", "-R", Repo, "--state", "open", "--limit", "1000", "--json", "number,title,author,body,url"], timeoutSeconds: 45);
         var result = new List<Patch>();
         using var d = JsonDocument.Parse(json);
         foreach (var item in d.RootElement.EnumerateArray())
@@ -114,10 +114,11 @@ internal static class BridgeGitHub
         return await ProcessRunner.RunAsync("gh", ["issue", "comment", patch.Number.ToString(), "-R", Repo, "--body", report], timeoutSeconds: 50);
     }
 
-    internal static async Task<string> SendAnswerAsync(int issueNumber, string patchId, string report)
+    internal static async Task<string> SendAnswerAsync(int issueNumber, string patchId, string report, string marker)
     {
-        if (issueNumber <= 0 || !System.Text.RegularExpressions.Regex.IsMatch(patchId, "^P[0-9]{4,6}$"))
-            throw new ArgumentOutOfRangeException(nameof(issueNumber));
+        if (issueNumber <= 0 || !System.Text.RegularExpressions.Regex.IsMatch(patchId, "^P[0-9]{4,6}$")
+            || !marker.StartsWith("<!-- uub-ans-v2:", StringComparison.Ordinal))
+            throw new ArgumentException("Недопустимые идентификаторы ответа.");
         await EnsureAuthAsync();
         var json = await ProcessRunner.RunAsync("gh", ["issue", "view", issueNumber.ToString(), "-R", Repo,
             "--json", "author,title,comments"], timeoutSeconds: 50);
@@ -128,16 +129,35 @@ internal static class BridgeGitHub
         if (!string.Equals(author, TrustedAuthor, StringComparison.OrdinalIgnoreCase) || title != $"[PATCH {patchId}]")
             throw new InvalidOperationException("Issue не принадлежит доверенному автору или название изменено.");
 
-        // Check GitHub before posting so an interrupted previous send does not duplicate ANS.
+        // A retry with a different attempt ID must NOT reuse an obsolete FAIL comment.
+        // Comparing stable receipt markers also handles a network failure after a successful post.
         foreach (var comment in issue.GetProperty("comments").EnumerateArray())
         {
-            if (comment.GetProperty("author").GetProperty("login").GetString() != TrustedAuthor) continue;
+            if (!string.Equals(comment.GetProperty("author").GetProperty("login").GetString(),
+                    TrustedAuthor, StringComparison.OrdinalIgnoreCase)) continue;
             var body = comment.GetProperty("body").GetString() ?? "";
             if (!body.StartsWith($"## ANS {patchId} — ", StringComparison.Ordinal)) continue;
+            if (!body.Contains(marker, StringComparison.Ordinal)) continue;
             return comment.TryGetProperty("url", out var u) ? (u.GetString() ?? "") : "";
         }
         return await ProcessRunner.RunAsync("gh", ["issue", "comment", issueNumber.ToString(), "-R", Repo,
-            "--body", report], timeoutSeconds: 50);
+            "--body", report + "\n" + marker], timeoutSeconds: 50);
+    }
+
+    internal static async Task CloseCompletedPatchAsync(int issueNumber, string patchId)
+    {
+        await EnsureAuthAsync();
+        string json = await ProcessRunner.RunAsync("gh", ["issue", "view", issueNumber.ToString(), "-R", Repo,
+            "--json", "author,title,state"], timeoutSeconds: 50);
+        using var doc = JsonDocument.Parse(json);
+        var issue = doc.RootElement;
+        var author = issue.GetProperty("author").GetProperty("login").GetString();
+        if (!string.Equals(author, TrustedAuthor, StringComparison.OrdinalIgnoreCase) ||
+            issue.GetProperty("title").GetString() != $"[PATCH {patchId}]")
+            throw new InvalidOperationException("Закрытие Issue отклонено: автор или ID не совпадают.");
+        if (issue.GetProperty("state").GetString() == "CLOSED") return;
+        await ProcessRunner.RunAsync("gh", ["issue", "close", issueNumber.ToString(), "-R", Repo,
+            "--reason", "completed"], timeoutSeconds: 50);
     }
 
 }
