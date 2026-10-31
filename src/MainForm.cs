@@ -24,7 +24,7 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.2.0";
+        Text = "uUnity Bridge · PATCH / ANS · 0.2.1";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
