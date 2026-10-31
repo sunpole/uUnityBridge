@@ -23,6 +23,10 @@ jobs:
         run: |
           dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
           if (-not (Test-Path ./dist/win-x64/uUnityBridge.exe)) { throw 'Missing uUnityBridge.exe' }
+          dotnet publish ./updater/uUnityBridge.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path ./dist/win-x64/uUnityBridge.Updater.exe)) { throw 'Missing updater EXE' }
+          $sha = (Get-FileHash ./dist/win-x64/uUnityBridge.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path ./dist/win-x64).Path 'uUnityBridge.exe.sha256'), $sha + '  uUnityBridge.exe' + [Environment]::NewLine)
       - name: Test patch state machine and ledger
         shell: pwsh
         run: |
