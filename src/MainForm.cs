@@ -66,9 +66,9 @@ internal sealed class MainForm : Form
                 var history = PatchHistory.Load();
                 ReportInbox.LoadOrInitialize(history); // Baseline legacy v0.2.1 ANS only once.
                 RefreshReportButton(history);
-                details.Text = "Автоматическая синхронизация включена. Проверка GitHub каждые 60 секунд.\\r\\n" +
-                    "Новые разрешённые PATCH применяются, ответы ANS публикуются, завершённые Issues закрываются.\\r\\n" +
-                    "Кнопка ОТЧЁТ доступна только при новых опубликованных результатах.\\r\\n" +
+                details.Text = "Автоматическая синхронизация включена. Проверка GitHub каждые 60 секунд.\r\n" +
+                    "Новые разрешённые PATCH применяются, ответы ANS публикуются, завершённые Issues закрываются.\r\n" +
+                    "Кнопка ОТЧЁТ доступна только при новых опубликованных результатах.\r\n" +
                     "В публичном GitHub не выполняются произвольные команды или установщики.";
                 await PollOnceAsync();
                 poller.Start();
@@ -106,13 +106,18 @@ internal sealed class MainForm : Form
             int minutes = Math.Min(30, 1 << Math.Min(consecutiveNetworkErrors, 5));
             nextPollUtc = DateTimeOffset.UtcNow.AddMinutes(minutes);
             status.Text = $"Проверка не удалась · повтор не ранее чем через {minutes} мин.";
-            details.Text = e.Message + "\\r\\n\\r\\nДействия в GitHub не повторяются вне контроля истории.";
+            details.Text = e.Message + "\r\n\r\nДействия в GitHub не повторяются вне контроля истории.";
             try { RefreshReportButton(PatchHistory.Load()); } catch { /* Fail closed. */ }
         }
         finally
         {
             polling = false;
-            if (!IsDisposed && !Disposing) poller.Start();
+            if (!IsDisposed && !Disposing)
+            {
+                try { RefreshReportButton(PatchHistory.Load()); }
+                catch { copy.Enabled = false; }
+                poller.Start();
+            }
         }
     }
 
