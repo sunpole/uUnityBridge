@@ -144,7 +144,7 @@ internal static class BridgeGitHub
             "--body", report + "\n" + marker], timeoutSeconds: 50);
     }
 
-    internal static async Task CloseCompletedPatchAsync(int issueNumber, string patchId)
+    internal static async Task CloseFinishedPatchAsync(int issueNumber, string patchId, bool success)
     {
         await EnsureAuthAsync();
         string json = await ProcessRunner.RunAsync("gh", ["issue", "view", issueNumber.ToString(), "-R", Repo,
@@ -157,7 +157,7 @@ internal static class BridgeGitHub
             throw new InvalidOperationException("Закрытие Issue отклонено: автор или ID не совпадают.");
         if (issue.GetProperty("state").GetString() == "CLOSED") return;
         await ProcessRunner.RunAsync("gh", ["issue", "close", issueNumber.ToString(), "-R", Repo,
-            "--reason", "completed"], timeoutSeconds: 50);
+            "--reason", success ? "completed" : "not planned"], timeoutSeconds: 50);
     }
 
 }
