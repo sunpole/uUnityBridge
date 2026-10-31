@@ -10,5 +10,6 @@
     <Compile Include="../../src/GhClient.cs" Link="GhClient.cs" />
     <Compile Include="../../src/PatchHistory.cs" Link="PatchHistory.cs" />
     <Compile Include="../../src/PatchWorkflow.cs" Link="PatchWorkflow.cs" />
+    <Compile Include="../../src/ReportInbox.cs" Link="ReportInbox.cs" />
   </ItemGroup>
 </Project>

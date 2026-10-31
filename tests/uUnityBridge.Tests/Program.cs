@@ -53,4 +53,16 @@ MustReject(() => PatchHistory.Parse("[" + json.TrimStart('[').TrimEnd(']') + ","
     json.TrimStart('[').TrimEnd(']') + "]"), "duplicate issue number rejected");
 MustReject(() => PatchHistory.Parse("malformed-json"), "malformed history rejected");
 
+var previous = receipt with { State = "PASS", Posted = true, AnswerUrl = "https://github.com/sunpole/uUnityBridge/issues/2#issuecomment-1" };
+var copied = new HashSet<string>(StringComparer.Ordinal) { ReportInbox.Key(previous) };
+Check(ReportInbox.Pending(new[] { previous }, copied).Count == 0, "previously copied ANS hidden");
+Check(ReportInbox.Pending(new[] { previous with { Closed = true, UpdatedAt = DateTimeOffset.UtcNow } }, copied).Count == 0,
+    "closing Issue does not create a duplicate notification");
+var second = previous with { Number = 3, Id = "P0003", AnswerUrl = "https://github.com/sunpole/uUnityBridge/issues/3#issuecomment-1" };
+Check(ReportInbox.Pending(new[] { previous, second }, copied).Count == 1, "only new ANS becomes reportable");
+Check(ReportInbox.Pending(new[] { second with { Posted = false } }, copied).Count == 0, "unpublished result never reported");
+var roundtrip = ReportInbox.Parse(System.Text.Json.JsonSerializer.Serialize(copied.Order(StringComparer.Ordinal).ToArray()));
+Check(roundtrip.SetEquals(copied), "cursor serializes without losing acknowledged ANS");
+MustReject(() => ReportInbox.Parse("not json"), "corrupted cursor rejected");
+
 Console.WriteLine($"PASS: {checks} tests. No network calls or local user files modified.");
