@@ -65,4 +65,10 @@ var roundtrip = ReportInbox.Parse(System.Text.Json.JsonSerializer.Serialize(copi
 Check(roundtrip.SetEquals(copied), "cursor serializes without losing acknowledged ANS");
 MustReject(() => ReportInbox.Parse("not json"), "corrupted cursor rejected");
 
+Check(ReleaseUpdater.TryVersion("v0.4.1", out var releaseV) && releaseV == new Version(0, 4, 1),
+    "stable release tag parses correctly");
+Check(!ReleaseUpdater.TryVersion("v0.4.1-rc.1", out _), "prerelease tag rejected");
+Check(!ReleaseUpdater.TryVersion("../../v0.4.1", out _), "invalid path-like tag rejected");
+Check(!ReleaseUpdater.TryVersion("v0.4", out _), "incomplete tag rejected");
+
 Console.WriteLine($"PASS: {checks} tests. No network calls or local user files modified.");
