@@ -18,6 +18,9 @@ internal static class Program
         if (args is ["--self-test"])
             return await SelfTest.RunAsync();
 
+        if (args is ["--deployment-self-test"])
+            return DeploymentSelfTests.Run();
+
         if (args is ["--diagnose"])
         {
             // A local, read-only check requiring no pipe connection or GitHub token.
