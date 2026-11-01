@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>uUnityBridge — история версий и путь к Unity</title>
+  <style>
+    :root { font-family: "Segoe UI",system-ui,-apple-system,sans-serif; color-scheme: dark;
+      --bg:#0e1523; --panel:#172235; --edge:#35465f; --text:#f1f5fc; --muted:#a9bbd3; --green:#72dab5; --amber:#f8cc7a; --blue:#9fc6ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(ellipse at 10% -10%,#273e65 0,transparent 45%),var(--bg);color:var(--text);line-height:1.55; }
+    main { max-width:1040px; padding:42px 22px 70px; margin:auto; }
+    h1 { font-size:clamp(2rem,6vw,3.6rem);line-height:1.12;margin:.3em 0;letter-spacing:-.04em; }
+    h2 { font-size:1.38rem;margin:36px 0 14px; }
+    h3 { font-size:1.05rem;margin:0 0 8px; }
+    p { margin:9px 0; }
+    .eyebrow { font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);font-size:.77rem; }
+    .lead { max-width:780px;color:var(--muted);font-size:1.09rem; }
+    .highlight { color:var(--blue);font-weight:700; }
+    .grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:26px 0; }
+    .card { background:var(--panel);border:1px solid var(--edge);border-radius:15px;padding:19px; }
+    .card .label { color:var(--muted);font-size:.78rem;letter-spacing:.045em;text-transform:uppercase;font-weight:650; }
+    .card strong { display:block;font-size:1.42rem;margin:5px 0; }
+    .card span { display:block;color:var(--muted);font-size:.88rem; }
+    .status {display:inline-block;border:1px solid var(--edge);color:var(--muted);font-size:.76rem;white-space:nowrap;border-radius:30px;padding:3px 9px;font-weight:650;}
+    .ok {color:var(--green);border-color:#35735b;}
+    .pending {color:var(--amber);border-color:#8e6d30;}
+    .none {color:#b7c8dc;}
+    a {color:var(--blue);text-underline-offset:3px;}
+    .timeline {display:grid;gap:0;padding-left:24px;border-left:2px solid var(--edge);}
+    .event {position:relative;padding:3px 0 26px 20px;}
+    .event:before {content:"";position:absolute;left:-32px;top:9px;width:12px;height:12px;border-radius:50%;background:var(--blue);border:4px solid var(--bg);}
+    .event:first-child:before {background:var(--green);}
+    .event p {color:var(--muted);margin:4px 0;}
+    .event small {font-weight:700;color:var(--muted);}
+    .list {display:grid;gap:10px;}
+    .item {display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:15px 17px;}
+    .item p {font-size:.91rem;color:var(--muted);margin:2px 0 0;}
+    .item strong {display:block;}
+    .notice {border-left:3px solid var(--amber);padding:13px 18px;background:#29283b;border-radius:0 10px 10px 0;color:#f0d7a6;}
+    nav {display:flex;flex-wrap:wrap;gap:16px;margin-top:28px;}
+    footer {border-top:1px solid var(--edge);margin-top:40px;padding-top:18px;color:var(--muted);font-size:.85rem;}
+    @media (max-width:700px) {.grid{grid-template-columns:1fr}.item{flex-direction:column;gap:7px}main{padding-top:27px}}
+    @media print { :root{color-scheme:light;--bg:#fff;--panel:#f2f5f9;--edge:#ced6e0;--text:#152134;--muted:#4c5c72;--blue:#1b53a3;--green:#176746;--amber:#8a5100}body{background:white} .notice{background:#fff5dc;color:#633e00} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">uUnityBridge · дорожная карта и история</div>
+    <h1>От GitHub-моста<br>к управлению <span class="highlight">Unity</span></h1>
+    <p class="lead">Проверенная история разработки на 1 ноября 2026 года. Здесь отдельно показаны реальные результаты, код в тестовой ветке и то, чего пока нет. Это статический снимок, не мониторинг ПК в реальном времени.</p>
+  </header>
+
+  <section aria-label="Текущие версии" class="grid">
+    <article class="card"><div class="label">Стабильный Desktop</div><strong>v0.4.2</strong><span><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Опубликован в GitHub</a></span></article>
+    <article class="card"><div class="label">Агент на ПК — последняя диагностика</div><strong>v0.2.1</strong><span>Связь status проверена; обновление не подтверждено</span></article>
+    <article class="card"><div class="label">В разработке · PR #25</div><strong>0.4.3 / 0.3.0</strong><span>Desktop / Agent preview — CI PASS, не Release</span></article>
+  </section>
+
+  <section>
+    <h2>Главная цель проекта</h2>
+    <div class="notice"><strong>Пока не достигнута:</strong> команда из ChatGPT должна изменить и сохранить сцену в настоящем Unity Editor, а затем вернуть разрешённый скриншот окна. Unity Editor API и скриншотер в коде отсутствуют.</div>
+  </section>
+
+  <section>
+    <h2>Хронология разработки</h2>
+    <div class="timeline">
+      <article class="event"><small>Ранние выпуски · историческая запись</small><h3>v0.1.0 → v0.3.0</h3><p>Первый путь Desktop, PATCH/ANS и история ранних исходников. Архивные пересборки не обязательно совпадают с прежними EXE.</p><a href="https://github.com/sunpole/uUnityBridge/blob/main/docs/HISTORICAL_RELEASES.md">Исторические коммиты</a></article>
+      <article class="event"><small>Серия 0.4</small><h3>v0.4.0 → v0.4.2</h3><p>Desktop updater, резервирование и стабильный опубликованный v0.4.2. Последняя пользовательская диагностика: Updater 0.4.0.0.</p><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Открыть Release</a></article>
+      <article class="event"><small>01.11.2026 · проверено на ПК</small><h3>Agent 0.2.1 — GitHub status relay <span class="status ok">PASS</span></h3><p>ChatGPT создал Issue, агент получил задание и ответил. Это не удалённая установка, запуск Unity или скриншот.</p><a href="https://github.com/sunpole/uUnityBridge/issues/29">Проверка R000005</a></article>
+      <article class="event"><small>01.11.2026 · только Draft PR</small><h3>Desktop 0.4.3 + Agent 0.3.0 preview <span class="status pending">QA ожидается</span></h3><p>Проверки файлов, ZIP, SHA-256, изолированного rollback и Windows Named Pipe прошли CI. Реальная приёмка на обычном Windows-пользователе и публикация не выполнены.</p><a href="https://github.com/sunpole/uUnityBridge/pull/25">PR #25</a></article>
+      <article class="event"><small>Следующий видимый результат</small><h3>UNITY-MVP <span class="status none">Ещё нет</span></h3><p>Открыть тестовый Unity-проект, создать платформы безопасной командой Unity Editor API и увидеть сохранённую сцену.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Открытые цели и долги</h2>
+    <div class="list">
+      <div class="item"><div><strong>P0009 · Двусторонний status</strong><p>Единственное доказанное действие установленного Agent 0.2.1</p></div><span class="status ok">Готово для status</span></div>
+      <div class="item"><div><strong>P0010 · Доставка Release</strong><p>Изолированные CI PASS, настоящая установка и rollback под обычным Windows-пользователем ещё не проверены</p></div><span class="status pending">Нужен E2E</span></div>
+      <div class="item"><div><strong>UNITY-MVP · Первая сцена Unity</strong><p>Видимый приоритет: C# Unity Editor API и реальная сохранённая сцена</p></div><span class="status none">Планируется</span></div>
+      <div class="item"><div><strong>P0012 / P0013 · Агент, версии, GUI и диагностика</strong><p>Отображать состояние без PowerShell, безопасно обновлять агент</p></div><span class="status pending">Частично</span></div>
+      <div class="item"><div><strong>P0014 / P0015 · Unity API, запуск, скриншоты</strong><p>Только разрешённый проект и окно; приватная доставка изображений</p></div><span class="status none">Не реализовано</span></div>
+      <div class="item"><div><strong>P0011 / P0016 · Полный цикл</strong><p>ChatGPT → Unity Editor → окно/сцена → проверка → ChatGPT</p></div><span class="status none">Не реализовано</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Как узнаем, что можно ставить новые цели?</h2>
+    <p>Каждый пункт должен иметь ссылку на изменения, CI, действительную приёмку в Windows/Unity и подтверждённый результат. Только когда <strong>все согласованные долги</strong> доказанно закрыты, появляется сообщение: <strong>«ТЕКУЩИЙ НАБОР ЦЕЛЕЙ ЗАВЕРШЁН. НУЖНЫ НОВЫЕ ЦЕЛИ»</strong>.</p>
+    <p class="lead">Зелёный CI и документированный план сами по себе не означают готовую программу.</p>
+  </section>
+
+  <nav aria-label="Документы">
+    <a href="version.md">Полная история в Markdown</a>
+    <a href="version.json">Машинный реестр JSON</a>
+    <a href="CONTINUE_HERE.md">Продолжить разработку</a>
+    <a href="docs/GOALS_AND_ACCEPTANCE.md">Критерии приёмки</a>
+    <a href="AGENTS.md">Правила проекта</a>
+  </nav>
+  <footer>uUnityBridge · статическая документальная версия · проверка на 01.11.2026. При изменениях кодовых версий и результатов обновлять HTML, Markdown, JSON и основной документ вместе. Не содержит ключей, пользовательских файлов или скриншотов.</footer>
+</main>
+</body>
+</html>
