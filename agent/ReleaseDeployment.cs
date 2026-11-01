@@ -149,8 +149,8 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
                 run.GetProperty("head_branch").GetString() != "main" ||
                 run.GetProperty("event").GetString() is not ("push" or "workflow_dispatch") ||
                 run.GetProperty("repository").GetProperty("full_name").GetString() != profile.Repository ||
-                !(run.GetProperty("path").GetString() ?? "").StartsWith(
-                    ".github/workflows/" + profile.WorkflowFile + "@", StringComparison.Ordinal))
+                !string.Equals(run.GetProperty("path").GetString(),
+                    ".github/workflows/" + profile.WorkflowFile, StringComparison.Ordinal))
                 return new DeploymentResult("BLOCKED", "ci_provenance_failed");
 
             string stage = Path.Combine(root, ".stage-" + Guid.NewGuid().ToString("N"));
