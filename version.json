@@ -31,7 +31,24 @@
       "https://github.com/sunpole/uUnityBridge/actions/runs/41333118950",
       "https://github.com/sunpole/uUnityBridge/actions/runs/41333118927",
       "https://github.com/sunpole/uUnityBridge/actions/runs/41333119066"
-    ]
+    ],
+    "unityEditorMvp": {
+      "pullRequest": 30,
+      "url": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "state": "draft",
+      "referenceCommit": "b06c08b4deb6c3686f1286c836d3be9c18cf52a8",
+      "packageVersion": "0.1.0",
+      "commands": [
+        "unity_status",
+        "create_scene",
+        "create_platform",
+        "save_scene"
+      ],
+      "contractCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41339356505",
+      "desktopCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41339356403",
+      "editorInstalledOnUserPc": false,
+      "unityEditorE2eVerified": false
+    }
   },
   "goals": [
     {
@@ -53,10 +70,11 @@
     {
       "id": "UNITY-MVP",
       "name": "Unity Editor API: создать и сохранить тестовую сцену",
-      "status": "planned",
+      "status": "ci_pass_qa_pending",
       "blocking": true,
-      "proof": null,
-      "next": "Открыть Unity-проект, разработать editor package и проверить изменение сцены"
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "next": "Пользователь устанавливает Unity Hub / Unity 6.3 LTS, создаёт uUnityDemo 2D и проверяет, что пакет создаёт/сохраняет сцену. Код в Draft PR, не установлен.",
+      "note": "Пакет Unity Editor и четыре локальные команды созданы в Draft PR #30; контрактные .NET/Windows CI PASS. Сам Unity Editor не запускался."
     },
     {
       "id": "P0011",
@@ -108,6 +126,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-01",
+      "version": "Unity Editor MVP package 0.1.0 (Draft PR #30)",
+      "kind": "draft_ci",
+      "result": "Создан редакторный C# пакет и четыре ограниченные команды. Две GitHub CI PASS; Unity Hub и Editor пока отсутствуют у пользователя, Unity E2E не проверен.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-01",
       "version": "v0.4.2",
