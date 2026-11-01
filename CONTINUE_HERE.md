@@ -6,6 +6,21 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## Текущая контрольная точка UNITY-MVP — 2026-11-01
+
+**Пользователь уточнил:** Unity Hub, Unity Editor и тестового проекта пока **НЕТ** на Windows ПК. Нельзя требовать от него открыть отсутствующий Editor. Инструкция: с официального `https://unity.com/download` установить Unity Hub, войти в аккаунт (если разрешено правилами платформы), через Installs → Install Editor выбрать **Unity 6.3 LTS**, затем Projects → New project → **2D**, название `uUnityDemo`. Записать версию редактора и подтвердить открытие проекта. Не запускать старые скрипты и не обновлять рабочий uUnityBridge.
+
+**Реально сделано в GitHub:** создан отдельный **Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30)**, ветка `feature/unity-mvp-editor-foundation`, commit `b06c08b4deb6c3686f1286c836d3be9c18cf52a8`.
+В `unity/Packages/com.sunpole.uunitybridge/` добавлен редакторный пакет `0.1.0` (Unity 6.3 LTS), меню `Tools → uUnityBridge`, четыре локальные типизированные операции `unity_status`, `create_scene`, `create_platform`, `save_scene`. Они работают с фиксированной демонстрационной сценой `Assets/uUnityDemo/Scenes/uUnityDemo.unity`, отказываются менять чужую сцену, перезаписывать существующую и использовать произвольный путь/команду.
+- [Unity policy CI #41339356505](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505) — **PASS** (без Unity Editor).
+- [Windows desktop CI #41339356403](https://github.com/sunpole/uUnityBridge/actions/runs/41339356403) — **PASS**.
+- **Не проверено:** установка пакета через Package Manager, компиляция внутри Unity Editor, реальное создание/открытие сцены на Windows, ChatGPT→Unity связь, window_capture и API-адаптер. До реального теста Unity статус `UNITY-MVP` — `ci_pass_qa_pending`, не `done`.
+- **PR #25 P0010** остаётся отдельно открытым Draft; `v0.4.2` — последний стабильный Desktop. Никакие файлы рабочей установки `uUnityBridge_App` или Agent не изменялись.
+- Основная история обновлена: `version.json`, `version.md`, `version.html`, `docs/GOALS_AND_ACCEPTANCE.md`; полные правила — `AGENTS.md`.
+- **Следующий реальный видимый критерий:** установлен Unity Editor, открыт пустой проект `uUnityDemo`, пакет из конкретного SHA PR #30 проверен, `Tools → uUnityBridge → Создать тестовую сцену` реально создаёт и сохраняет сцену с тремя платформами.
+- **Новые фичи агента не обещать до реализации.** Agent 0.2.1 пока работает только с `status`; агент не читает `AGENTS.md` и не принимает команды Unity.
+- **Уведомление о полном завершении** настроено отдельной условной автоматизацией ChatGPT и не означает, что задачи выполняются в фоне.
+
 ## Главное уточнение цели и новые правила — 2026-11-01 (UNITY-FIRST)
 
 **Проблема обнаружена пользователем:** много Windows CI и обновлений,
@@ -30,8 +45,7 @@
 - GitHub relay `status` подтверждён [R000005](https://github.com/sunpole/uUnityBridge/issues/29).
 - [PR #25](https://github.com/sunpole/uUnityBridge/pull/25) — Draft, новая
   доставка прошла CI, но **не выпущена и не установлена**.
-- В дереве исходников НЕТ Unity Editor package, команд изменения сцен,
-  window_capture или реального API ChatGPT ↔ Unity.
+- В `main` ещё НЕТ проверенного в редакторе Unity Editor package; в отдельном Draft PR #30 есть его исходники и CI-контракт. Нет window_capture или реального API ChatGPT ↔ Unity.
   `docs/LOCAL_API_MCP.md` — проектирование, НЕ существующий MCP.
 - `version.json` — документальный снимок, не выдаёт агенту разрешений
   и не обновляет цели автоматически.
