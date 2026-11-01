@@ -71,4 +71,52 @@ Check(!ReleaseUpdater.TryVersion("v0.4.1-rc.1", out _), "prerelease tag rejected
 Check(!ReleaseUpdater.TryVersion("../../v0.4.1", out _), "invalid path-like tag rejected");
 Check(!ReleaseUpdater.TryVersion("v0.4", out _), "incomplete tag rejected");
 
+// v0.5 pure manifest and delta-planner regression tests: no local files touched.
+string aHash = new string('a', 64);
+string bHash = new string('b', 64);
+var currentPackage = new PackageManifest(PackageFiles.Schema, "0.5.0", "portable", "win-x64",
+    [new PackageEntry("uUnityBridge.exe", 151552, aHash),
+     new PackageEntry("Core/uUnityBridge.dll", 8000, aHash),
+     new PackageEntry("Modules/readme.txt", 100, aHash)]);
+var futurePackage = currentPackage with
+{
+    Version = "0.5.1",
+    Files = [new PackageEntry("uUnityBridge.exe", 151552, aHash),
+             new PackageEntry("Core/uUnityBridge.dll", 9000, bHash),
+             new PackageEntry("Modules/readme.txt", 100, aHash),
+             new PackageEntry("Modules/new-feature.dll", 4000, bHash)]
+};
+PackageFiles.Validate(currentPackage);
+PackageFiles.Validate(futurePackage);
+Check(PackageFiles.MissingOrChanged(currentPackage, futurePackage)
+    .Select(x => x.Path).SequenceEqual(["Core/uUnityBridge.dll", "Modules/new-feature.dll"]),
+    "only changed and new DLL files selected");
+Check(PackageFiles.MissingOrChanged(futurePackage, futurePackage).Count == 0,
+    "identical manifest requires zero downloads");
+string manifestJson = JsonSerializer.Serialize(futurePackage);
+Check(PackageFiles.Parse(manifestJson).Version == "0.5.1", "manifest JSON roundtrip");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("core/UUNITYBRIDGE.DLL", 4, aHash)] }),
+    "case-insensitive filename collision rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("../outside.dll", 4, aHash)] }),
+    "directory traversal rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("Modules/COM1.dll", 4, aHash)] }),
+    "Windows device filenames rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("Modules/a:stream", 4, aHash)] }),
+    "NTFS alternate data stream rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("Modules/evil%2Fname.dll", 4, aHash)] }),
+    "encoded separators rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [..futurePackage.Files, new PackageEntry("Modules/bad.dll", 4, "INVALID")] }),
+    "malformed SHA-256 rejected");
+MustReject(() => PackageFiles.Validate(futurePackage with
+    { Files = [new PackageEntry("Core/other.dll", 1, aHash)] }),
+    "manifest missing executable rejected");
+MustReject(() => PackageFiles.MissingOrChanged(currentPackage, futurePackage with
+    { Profile = "compact" }), "profile migration cannot use incremental delta");
+
 Console.WriteLine($"PASS: {checks} tests. No network calls or local user files modified.");
