@@ -26,7 +26,7 @@ internal static class Program
                 .IsInRole(WindowsBuiltInRole.Administrator);
             Console.WriteLine(JsonSerializer.Serialize(new
             {
-                service = "uUnityBridge.Agent", version = "0.2.1-preview",
+                service = "uUnityBridge.Agent", version = "0.3.0-preview",
                 isElevated = elevated,
                 expectedExecution = "same standard Windows user/session for server and client"
             }));
@@ -39,7 +39,7 @@ internal static class Program
             {
                 int done = await GitHubRelay.RunOnceAsync(
                     new CliRelayIssueClient(), new GitHubReader(), CancellationToken.None);
-                Console.WriteLine($"Relay completed {done} status tasks.");
+                Console.WriteLine($"Relay processed {done} tasks.");
                 return 0;
             }
             catch (Exception e) when (e is IOException or InvalidOperationException
@@ -111,7 +111,7 @@ internal static class Program
 
         Console.WriteLine("uUnityBridge Agent 0.2.1 preview: current-user IPC + outbound GitHub relay; no admin tools.");
         Console.WriteLine("Read-only actions: health, capabilities, github_status, repo_status, workflow_preview.");
-        Console.WriteLine("No TCP ports, no PowerShell. Only validated remote status comments. Ctrl+C to stop.");
+        Console.WriteLine("No TCP ports, no PowerShell. Only typed authorized GitHub jobs. Ctrl+C to stop.");
         using var stop = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
         IGitHubReader github = new GitHubReader();
@@ -255,7 +255,7 @@ internal static class AgentProtocol
             {
                 "health" => new
                 {
-                    status = "ok", service = "uUnityBridge.Agent", version = "0.2.1-preview",
+                    status = "ok", service = "uUnityBridge.Agent", version = "0.3.0-preview",
                     mode = "read-only", adminToolsEnabled = false, transport = "current-user-named-pipe"
                 },
                 "capabilities" => new
