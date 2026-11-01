@@ -29,7 +29,7 @@ internal static class RelayProtocol
     private static readonly Regex IdPattern = new(
         @"^R[0-9]{6}$", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
     private static readonly Regex TagPattern = new(
-        @"^v[0-9]+\.[0-9]+\.[0-9]+$", RegexOptions.CultureInvariant);
+        @"^v[0-9]{1,6}\.[0-9]{1,6}\.[0-9]{1,6}$", RegexOptions.CultureInvariant);
     private static readonly Regex ProfilePattern = new(
         @"^[a-z][a-z0-9-]{1,31}$", RegexOptions.CultureInvariant);
     private static readonly Regex ShaPattern = new(
@@ -177,7 +177,7 @@ internal static class GitHubRelay
                     Console.Error.WriteLine("Relay poll timed out.");
                 }
                 catch (Exception e) when (e is IOException or InvalidOperationException
-                    or JsonException or InvalidDataException)
+                    or JsonException or InvalidDataException or FormatException)
                 {
                     Console.Error.WriteLine("Relay unavailable: " + e.GetType().Name);
                 }
