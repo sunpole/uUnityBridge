@@ -40,11 +40,12 @@ jobs:
         shell: pwsh
         run: |
           $diagnostic = & ./dist/agent-preview/uUnityBridge.Agent.exe --diagnose | ConvertFrom-Json
-          if ($LASTEXITCODE -ne 0 -or $diagnostic.isElevated -ne $false -or
+          if ($LASTEXITCODE -ne 0 -or
+              $diagnostic.isElevated -isnot [bool] -or
               $diagnostic.version -ne '0.2.1-preview') {
-            throw 'Agent diagnostic/elevation check failed on the Windows runner.'
+            throw 'Agent diagnostic output is invalid.'
           }
-          Write-Host 'PASS: non-elevated identity diagnostic and version'
+          Write-Host "PASS: identity diagnostic; elevated=$($diagnostic.isElevated)"
       - name: Smoke test published EXE without running a service
         shell: pwsh
         run: |
@@ -55,6 +56,17 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $exe = (Resolve-Path ./dist/agent-preview/uUnityBridge.Agent.exe).Path
+          $identity = (& $exe --diagnose | ConvertFrom-Json)
+          if ($identity.isElevated) {
+            # Hosted Windows runners can be elevated; this test must then
+            # prove the server refuses startup, not weaken its protections.
+            $blocked = & $exe --serve 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 5 -or $blocked -notmatch 'BLOCKED') {
+              throw 'Elevated agent did not refuse to start.'
+            }
+            Write-Host 'PASS: elevated Windows runner correctly blocked from serving.'
+            return
+          }
           $agent = Start-Process -FilePath $exe -ArgumentList '--serve' -PassThru -WindowStyle Hidden
           try {
             $reply = $null
