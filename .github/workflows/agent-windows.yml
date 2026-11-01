@@ -56,6 +56,11 @@ jobs:
         run: |
           & ./dist/agent-preview/uUnityBridge.Agent.exe --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Published agent self-test failed.' }
+      - name: Isolated current-user Named Pipe loopback (even on elevated CI runner)
+        shell: pwsh
+        run: |
+          & ./dist/agent-preview/uUnityBridge.Agent.exe --ipc-self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Current-user IPC loopback tests failed.' }
       - name: Local IPC end-to-end test (same Windows user, no open port)
         shell: pwsh
         run: |
