@@ -36,6 +36,15 @@ jobs:
           dotnet publish ./agent/uUnityBridge.Agent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o ./dist/agent-preview
           if ($LASTEXITCODE -ne 0) { throw 'Agent publish failed.' }
           if (-not (Test-Path ./dist/agent-preview/uUnityBridge.Agent.exe)) { throw 'Agent executable missing.' }
+      - name: Verify standard-user agent diagnostic without opening IPC
+        shell: pwsh
+        run: |
+          $diagnostic = & ./dist/agent-preview/uUnityBridge.Agent.exe --diagnose | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $diagnostic.isElevated -ne $false -or
+              $diagnostic.version -ne '0.2.1-preview') {
+            throw 'Agent diagnostic/elevation check failed on the Windows runner.'
+          }
+          Write-Host 'PASS: non-elevated identity diagnostic and version'
       - name: Smoke test published EXE without running a service
         shell: pwsh
         run: |
