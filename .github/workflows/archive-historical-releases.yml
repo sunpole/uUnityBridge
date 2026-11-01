@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: archive-uUnityBridge-history
@@ -43,9 +43,17 @@ jobs:
             }
             Write-Host "PASS parser $name"
           }
-      - name: Verify source, rebuild historical Windows EXEs, publish preserved releases
+      - name: Verify historical sources and rebuild Windows EXEs (without publishing releases)
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UUB_BUILD_ONLY: '1'
         run: |
           ./scripts/Archive-Historical-Releases.ps1
+      - name: Upload historical binary archives for owner-reviewed publishing
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: uUnityBridge-historical-rebuilds-ci
+          path: ${{ runner.temp }}/uub-history/*.zip
+          if-no-files-found: error
