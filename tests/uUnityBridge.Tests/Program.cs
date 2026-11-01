@@ -119,4 +119,40 @@ MustReject(() => PackageFiles.Validate(futurePackage with
 MustReject(() => PackageFiles.MissingOrChanged(currentPackage, futurePackage with
     { Profile = "compact" }), "profile migration cannot use incremental delta");
 
+// P0010: revocation must preserve every other field, even unknown future fields.
+const string permissionJson = """
+{"schema":"uub.deploy.settings.v1","profiles":[
+ {"id":"a-profile","repository":"sunpole/uUnityBridge","assetName":"release.zip",
+  "entrypoint":"app.exe","installRoot":"C:\\approved\\test",
+  "workflowFile":"release-windows.yml","enabled":true,"future":{"safe":23}},
+ {"id":"b-profile","repository":"sunpole/other","enabled":true}
+]}
+""";
+string revoked = DeploymentPermissionData.Revoke(permissionJson, "a-profile");
+using (var approved = JsonDocument.Parse(permissionJson))
+using (var result = JsonDocument.Parse(revoked))
+{
+    var source = approved.RootElement.GetProperty("profiles")[0];
+    var updated = result.RootElement.GetProperty("profiles")[0];
+    Check(!updated.GetProperty("enabled").GetBoolean(), "revoke disables selected profile");
+    foreach (string field in new[] { "id", "repository", "assetName",
+        "entrypoint", "installRoot", "workflowFile", "future" })
+        Check(source.GetProperty(field).GetRawText() ==
+            updated.GetProperty(field).GetRawText(),
+            "revoke preserves original " + field);
+    Check(approved.RootElement.GetProperty("profiles")[1].GetRawText() ==
+        result.RootElement.GetProperty("profiles")[1].GetRawText(),
+        "revoke preserves unrelated profile");
+}
+MustReject(() => DeploymentPermissionData.Revoke(permissionJson, "not-found"),
+    "revoke unknown profile rejected");
+MustReject(() => DeploymentPermissionData.Revoke(permissionJson.Replace(
+    "\"b-profile\"", "\"a-profile\""), "a-profile"),
+    "revoke duplicate profile rejected");
+MustReject(() => DeploymentPermissionData.Revoke(permissionJson.Replace(
+    "\"uub.deploy.settings.v1\"", "\"other\""), "a-profile"),
+    "revoke foreign schema rejected");
+MustReject(() => DeploymentPermissionData.Revoke("{broken", "a-profile"),
+    "revoke malformed JSON rejected");
+
 Console.WriteLine($"PASS: {checks} tests. No network calls or local user files modified.");
