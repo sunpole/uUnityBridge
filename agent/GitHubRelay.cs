@@ -89,7 +89,7 @@ internal static class RelayProtocol
                 }
                 if (output.Count == 5) break; // bounded work per poll
             }
-            catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException)
+            catch (Exception e) when (e is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
             {
                 // Untrusted Issues are never treated as code or instructions.
             }
