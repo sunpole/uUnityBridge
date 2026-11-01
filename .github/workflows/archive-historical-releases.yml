@@ -29,6 +29,19 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Check PowerShell syntax (no cleanup execution)
+        shell: pwsh
+        run: |
+          foreach ($name in @('./scripts/Clean-Local-QA.ps1', './scripts/Archive-Historical-Releases.ps1')) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $name).Path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -ne 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              throw "Invalid PowerShell script: $name"
+            }
+            Write-Host "PASS parser $name"
+          }
       - name: Verify source, rebuild historical Windows EXEs, publish preserved releases
         shell: pwsh
         env:
