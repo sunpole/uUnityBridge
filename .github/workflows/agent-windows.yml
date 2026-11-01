@@ -41,6 +41,34 @@ jobs:
         run: |
           & ./dist/agent-preview/uUnityBridge.Agent.exe --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Published agent self-test failed.' }
+      - name: Local IPC end-to-end test (same Windows user, no open port)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = (Resolve-Path ./dist/agent-preview/uUnityBridge.Agent.exe).Path
+          $agent = Start-Process -FilePath $exe -ArgumentList '--serve' -PassThru -WindowStyle Hidden
+          try {
+            $reply = $null
+            for ($attempt = 0; $attempt -lt 8; $attempt++) {
+              Start-Sleep -Milliseconds 500
+              $output = & $exe --request health 2>$null
+              if ($LASTEXITCODE -eq 0) {
+                $reply = $output | ConvertFrom-Json
+                break
+              }
+            }
+            if ($null -eq $reply -or $reply.status -ne 'ok' -or $reply.adminToolsEnabled -ne $false) {
+              throw 'Local named-pipe health request failed.'
+            }
+            $invalid = (& $exe --request powershell | ConvertFrom-Json)
+            if ($LASTEXITCODE -ne 0 -or $invalid.error -ne 'unknown_action') {
+              throw 'Unapproved remote command unexpectedly accepted.'
+            }
+            Write-Host 'PASS: local IPC, health and denied PowerShell request.'
+          }
+          finally {
+            if (-not $agent.HasExited) { Stop-Process -Id $agent.Id -Force }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-agent-p0008-preview
