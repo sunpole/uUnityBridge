@@ -45,6 +45,10 @@ jobs:
             }
             Write-Host "PASS parser $name"
           }
+      - name: Regression test JSON run ID selection on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          ./scripts/Publish-History-And-Clean.ps1 -SelfTest
       - name: Verify historical sources and rebuild Windows EXEs (without publishing releases)
         shell: pwsh
         env:
