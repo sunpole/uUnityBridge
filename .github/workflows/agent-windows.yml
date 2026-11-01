@@ -30,6 +30,11 @@ jobs:
         run: |
           dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Agent protocol self-tests failed.' }
+      - name: Test ZIP security in isolated CI temporary directory
+        shell: pwsh
+        run: |
+          dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --deployment-self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Deployment ZIP self-tests failed.' }
       - name: Publish standalone agent preview to CI artifacts only
         shell: pwsh
         run: |
@@ -42,7 +47,7 @@ jobs:
           $diagnostic = & ./dist/agent-preview/uUnityBridge.Agent.exe --diagnose | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or
               $diagnostic.isElevated -isnot [bool] -or
-              $diagnostic.version -ne '0.2.1-preview') {
+              $diagnostic.version -ne '0.3.0-preview') {
             throw 'Agent diagnostic output is invalid.'
           }
           Write-Host "PASS: identity diagnostic; elevated=$($diagnostic.isElevated)"
@@ -51,6 +56,11 @@ jobs:
         run: |
           & ./dist/agent-preview/uUnityBridge.Agent.exe --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Published agent self-test failed.' }
+      - name: Isolated current-user Named Pipe loopback (even on elevated CI runner)
+        shell: pwsh
+        run: |
+          & ./dist/agent-preview/uUnityBridge.Agent.exe --ipc-self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Current-user IPC loopback tests failed.' }
       - name: Local IPC end-to-end test (same Windows user, no open port)
         shell: pwsh
         run: |

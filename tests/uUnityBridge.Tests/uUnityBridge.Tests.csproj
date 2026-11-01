@@ -12,6 +12,7 @@
     <Compile Include="../../src/PatchWorkflow.cs" Link="PatchWorkflow.cs" />
     <Compile Include="../../src/ReportInbox.cs" Link="ReportInbox.cs" />
     <Compile Include="../../src/ReleaseUpdater.cs" Link="ReleaseUpdater.cs" />
+    <Compile Include="../../src/DeploymentPermissionData.cs" Link="DeploymentPermissionData.cs" />
     <Compile Include="../../src/PackageManifest.cs" Link="PackageManifest.cs" />
   </ItemGroup>
 </Project>
