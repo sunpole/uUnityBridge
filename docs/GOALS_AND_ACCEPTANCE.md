@@ -22,7 +22,7 @@ ChatGPT получает пользовательскую задачу на ру
 | 6 — P0011/P0016 | Полный цикл ChatGPT → Unity → результат → ChatGPT | Один настоящий сквозной запрос, проверяемый возврат и повтор без ручных файловых операций |
 
 **Последний стабильный Release:** `v0.4.2`. **P0010:** Draft [PR #25](https://github.com/sunpole/uUnityBridge/pull/25).
-**Не начато в коде:** Unity Editor package, команды сцен, window capture. Не отмечать выполненным по одному только CI.
+**Начато в коде:** Unity Editor MVP package и команды сцен находятся в [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30); [контрактный Windows CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505), но **Unity Hub/Editor отсутствуют на ПК и сцена в нём не проверялась**. Window capture и ChatGPT→Unity adapter ещё не реализованы. Не отмечать Unity-MVP завершённым по одному CI.
 
 ## Границы и метод разработки
 
@@ -39,8 +39,7 @@ ChatGPT получает пользовательскую задачу на ру
 
 ## Что сделать пользователю сейчас
 
-1. Открыть **Unity Hub**, убедиться, что Unity Editor установлен. Если Editor отсутствует —
-   установить официальным Unity Hub, не скачивая сторонние EXE.
+1. Если Unity Hub отсутствует, установить его с официальной страницы [Unity](https://unity.com/download); войти в Unity Hub и установить **Unity 6.3 LTS** через **Installs → Install Editor**. Операции установки выполняет пользователь в Windows, не удалённый агент.
 2. Создать или открыть **отдельный пустой тестовый 2D-проект**, например `uUnityDemo`.
    Не использовать рабочий проект и не запускать чужие скрипты.
 3. Оставить Unity Editor открытым и сообщить в чат **версию Unity Editor** и
