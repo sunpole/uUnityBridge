@@ -62,7 +62,7 @@ internal static class AgentBootstrapper
             release.GetProperty("prerelease").GetBoolean() ||
             !Regex.IsMatch(tag, @"^v\d+\.\d+\.\d+$") ||
             !Version.TryParse(tag[1..], out Version? version) ||
-            version < ReleaseUpdater.Current)
+            version < new Version(ReleaseUpdater.Current.Major, ReleaseUpdater.Current.Minor, ReleaseUpdater.Current.Build))
             return "BLOCKED: нет подходящего стабильного Release.";
 
         var assets = release.GetProperty("assets").EnumerateArray().ToArray();
