@@ -6,6 +6,13 @@ namespace uUnityBridge;
 internal sealed class MainForm : Form
 {
     private readonly Button copy = BigButton("ОТЧЁТ · НОВЫХ НЕТ", Color.FromArgb(31, 111, 81));
+    private readonly LinkLabel deploymentApproval = new()
+    {
+        Text = "Папка сборок", Dock = DockStyle.Fill,
+        TextAlign = ContentAlignment.MiddleCenter,
+        LinkColor = Color.FromArgb(35, 90, 150), AutoSize = false,
+        Font = new Font("Segoe UI", 10)
+    };
     private readonly System.Windows.Forms.Timer poller = new() { Interval = 60_000 };
     private bool polling;
     private int consecutiveNetworkErrors;
@@ -34,7 +41,7 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.4.2";
+        Text = "uUnity Bridge · PATCH / ANS · 0.4.3";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -46,12 +53,16 @@ internal sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80));
+        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3 };
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
         header.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
             Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold) }, 0, 0);
         header.Controls.Add(rollback, 1, 0);
+        header.Controls.Add(deploymentApproval, 2, 0);
+        deploymentApproval.LinkClicked += (_, _) =>
+            DeploymentApprovalDialog.Show(this);
         rollback.Visible = ReleaseUpdater.BackupAvailable();
         rollback.LinkClicked += (_, _) =>
         {
