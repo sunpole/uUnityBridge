@@ -103,7 +103,9 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
         {
             string statePath = Path.Combine(root, "state.json");
             string current = Path.Combine(root, "current");
-            var previous = ReadPrevious(statePath, current);
+            // Heal any interrupted directory swap before evaluating the current version.
+            DeploymentTransaction.Recover(root, profile.Id);
+            var previous = ReadPrevious(statePath, current, profile.Id);
             if (previous is not null)
             {
                 if (previous.JobId == job.Id && previous.Sha256 == job.Sha256)
@@ -169,48 +171,11 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
                 ExtractSafe(archive, extracted);
                 if (!File.Exists(Path.Combine(extracted, profile.Entrypoint)))
                     return new DeploymentResult("BLOCKED", "entrypoint_missing");
-                await File.WriteAllTextAsync(Path.Combine(extracted, ".uub-managed.json"),
-                    JsonSerializer.Serialize(new { schema = StateSchema, profile = profile.Id }), ct);
+                DeploymentTransaction.WriteManagedMarker(extracted, profile.Id, job.Id);
                 EnsureNoReparseAncestors(current, stopAt: root);
-
-                string backup = "";
-                if (previous is not null)
-                {
-                    string backups = Path.Combine(root, "backups");
-                    if (Directory.Exists(backups)) EnsureNoReparseAncestors(backups, stopAt: root);
-                    Directory.CreateDirectory(backups);
-                    backup = Path.Combine(backups, previous.Version + "-" +
-                        Guid.NewGuid().ToString("N"));
-                }
-
-                bool oldMoved = false;
-                bool newMoved = false;
-                try
-                {
-                    if (previous is not null)
-                    {
-                        Directory.Move(current, backup);
-                        oldMoved = true;
-                    }
-                    Directory.Move(extracted, current);
-                    newMoved = true;
-                    await File.WriteAllTextAsync(statePath + ".next",
-                        JsonSerializer.Serialize(new DeploymentState(
-                            StateSchema, job.ReleaseTag, job.Sha256, job.Id)), ct);
-                    File.Move(statePath + ".next", statePath, overwrite: true);
-                }
-                catch
-                {
-                    if (newMoved && Directory.Exists(current))
-                    {
-                        // Keep failed bytes for diagnosis, without deleting any user file.
-                        Directory.Move(current, Path.Combine(root,
-                            ".failed-" + Guid.NewGuid().ToString("N")));
-                    }
-                    if (oldMoved && Directory.Exists(backup))
-                        Directory.Move(backup, current);
-                    throw;
-                }
+                DeploymentTransaction.Install(root, extracted,
+                    new DeploymentState(StateSchema, job.ReleaseTag, job.Sha256, job.Id),
+                    profile.Id, previous);
                 return new DeploymentResult("PASS", "installed_files_verified");
             }
             finally
@@ -224,9 +189,11 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
         }
     }
 
-    private static DeploymentState? ReadPrevious(string statePath, string current)
+    private static DeploymentState? ReadPrevious(
+        string statePath, string current, string profile)
     {
         if (!File.Exists(statePath)) return null;
+        EnsureNoReparseAncestors(statePath);
         var old = JsonSerializer.Deserialize<DeploymentState>(
             File.ReadAllText(statePath), JsonOptions);
         if (old is null || old.Schema != StateSchema ||
@@ -236,10 +203,7 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
             !Directory.Exists(current))
             throw new InvalidDataException("Invalid previous installation.");
         EnsureNoReparseAncestors(current);
-        string managed = Path.Combine(current, ".uub-managed.json");
-        if (!File.Exists(managed) ||
-            !File.ReadAllText(managed).Contains(StateSchema, StringComparison.Ordinal))
-            throw new InvalidDataException("Previous install lacks agent marker.");
+        DeploymentTransaction.RequireMarker(current, profile, null);
         return old;
     }
 
