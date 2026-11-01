@@ -20,6 +20,8 @@ internal static class Program
     {
         try
         {
+            if (args is ["agent-apply", var targetAgent, var sha256, var nonce])
+                return AgentUpdater.Run(targetAgent, sha256, nonce);
             if (args.Length < 3 || args[0] is not ("apply" or "rollback"))
                 throw new InvalidDataException("Неверный режим обновлятора.");
             string mode = args[0];
