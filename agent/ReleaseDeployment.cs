@@ -132,11 +132,10 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
             if (assets.Length != 1 || assets[0].GetProperty("id").GetInt64() != job.AssetId ||
                 assets[0].GetProperty("size").GetInt64() is < 1024 or > MaxArchiveBytes)
                 return new DeploymentResult("BLOCKED", "asset_identity_mismatch");
-            if (assets[0].TryGetProperty("digest", out var digest) &&
-                digest.ValueKind == JsonValueKind.String &&
-                digest.GetString() is string assetDigest &&
-                !string.Equals(assetDigest, "sha256:" + job.Sha256, StringComparison.OrdinalIgnoreCase))
-                return new DeploymentResult("BLOCKED", "asset_digest_mismatch");
+            // The digest is supplied by GitHub's Release API, independently
+            // of the Issue body. Refuse assets lacking a published digest.
+            if (!HasMatchingPublishedDigest(assets[0], job.Sha256))
+                return new DeploymentResult("BLOCKED", "asset_digest_missing_or_mismatch");
 
             // Ensure a successful CI build corresponds to the commit referenced by the tag.
             string taggedSha = (await RunGhAsync(["api", "repos/" + profile.Repository +
@@ -309,6 +308,16 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
                 StringComparison.OrdinalIgnoreCase)) break;
             if (Path.GetPathRoot(current) == current) break;
         }
+    }
+
+    internal static bool HasMatchingPublishedDigest(JsonElement asset, string sha)
+    {
+        return ShaPattern.IsMatch(sha) &&
+            asset.ValueKind == JsonValueKind.Object &&
+            asset.TryGetProperty("digest", out var digest) &&
+            digest.ValueKind == JsonValueKind.String &&
+            string.Equals(digest.GetString(), "sha256:" + sha,
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static string HashFile(string file)
