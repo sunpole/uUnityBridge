@@ -79,6 +79,17 @@ foreach ($entry in $history) {
     $zip = Join-Path $env:RUNNER_TEMP ("uUnityBridge-$tag-HISTORICAL-REBUILD-win-x64.zip")
     Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $zip -CompressionLevel Optimal
     if (-not (Test-Path $zip)) { throw "Could not create ZIP for $tag" }
+    if ($env:UUB_BUILD_ONLY -eq '1') {
+        # Unprivileged CI: produce verified ZIPs, never try to push tags/releases.
+        $artifacts = Join-Path $env:RUNNER_TEMP 'uub-history'
+        New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
+        Copy-Item -LiteralPath $zip -Destination $artifacts
+        Write-Host "ARCHIVE BUILT $tag $(Get-Item $zip | Select-Object -ExpandProperty Length) bytes"
+        git worktree remove --force $worktree
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to clean temporary worktree' }
+        continue
+    }
+
     $notes = Join-Path $env:RUNNER_TEMP ("release-$tag.md")
     @(
         "## uUnityBridge $tag — исторический выпуск",
