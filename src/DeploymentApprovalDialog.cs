@@ -112,67 +112,100 @@ internal static class DeploymentApprovalDialog
                 .Select(x => x.Clone()).ToList();
         }
 
+        void PersistProfiles(List<object> profiles)
+        {
+            if (profiles.Count > 20)
+                throw new InvalidDataException("Достигнут лимит 20 профилей.");
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);
+            string next = SettingsFile + ".next";
+            File.WriteAllText(next, JsonSerializer.Serialize(new
+            {
+                schema = Schema, profiles
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            File.Move(next, SettingsFile, overwrite: true);
+        }
+
         void SaveProfile(bool enabled)
         {
             try
             {
                 string profileId = id.Text.Trim();
-                if (!Regex.IsMatch(profileId, @"^[a-z][a-z0-9-]{1,31}$") ||
-                    !Regex.IsMatch(repository.Text.Trim(), @"^sunpole/[A-Za-z0-9_.-]+$") ||
+                if (!Regex.IsMatch(profileId, @"^[a-z][a-z0-9-]{1,31}$"))
+                    throw new InvalidDataException("Некорректное имя профиля.");
+
+                if (!enabled)
+                {
+                    // Revoke the selected EXISTING profile without changing
+                    // repository, asset, workflow or previously approved path.
+                    var oldProfiles = LoadProfiles();
+                    var matches = oldProfiles.Where(x =>
+                        x.GetProperty("id").GetString() == profileId).ToArray();
+                    if (matches.Length != 1)
+                        throw new InvalidDataException("Укажите существующий профиль для запрета.");
+                    var original = matches[0];
+                    var remaining = oldProfiles.Where(x =>
+                        x.GetProperty("id").GetString() != profileId).Cast<object>().ToList();
+                    remaining.Add(new
+                    {
+                        id = original.GetProperty("id").GetString(),
+                        repository = original.GetProperty("repository").GetString(),
+                        assetName = original.GetProperty("assetName").GetString(),
+                        entrypoint = original.GetProperty("entrypoint").GetString(),
+                        installRoot = original.GetProperty("installRoot").GetString(),
+                        workflowFile = original.GetProperty("workflowFile").GetString(),
+                        enabled = false
+                    });
+                    PersistProfiles(remaining);
+                    MessageBox.Show(dialog, "Разрешение отозвано. Путь и параметры сохранены.",
+                        "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    dialog.Close();
+                    return;
+                }
+
+                if (!Regex.IsMatch(repository.Text.Trim(), @"^sunpole/[A-Za-z0-9_.-]+$") ||
                     !Regex.IsMatch(archive.Text.Trim(), @"^[A-Za-z0-9_.-]+\.zip$") ||
                     !Regex.IsMatch(entrypoint.Text.Trim(), @"^[A-Za-z0-9_. -]+\.exe$") ||
                     !Regex.IsMatch(workflow.Text.Trim(), @"^[A-Za-z0-9_.-]+\.yml$"))
-                    throw new InvalidDataException("Проверьте имя профиля, репозиторий и имена файлов.");
+                    throw new InvalidDataException("Проверьте репозиторий и имена файлов.");
                 string target = folder.Text.Trim();
-                if (enabled)
+                if (!Path.IsPathFullyQualified(target) || !Directory.Exists(target))
+                    throw new InvalidDataException("Сначала выберите существующую папку.");
+                string root = Path.GetFullPath(target);
+                if (string.Equals(root.TrimEnd(Path.DirectorySeparatorChar),
+                    Path.GetPathRoot(root)!.TrimEnd(Path.DirectorySeparatorChar),
+                    StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Корень диска запрещён.");
+                for (string? part = root; part is not null; part = Path.GetDirectoryName(part))
                 {
-                    if (!Path.IsPathFullyQualified(target) || !Directory.Exists(target))
-                        throw new InvalidDataException("Сначала выберите существующую папку.");
-                    string root = Path.GetFullPath(target);
-                    if (string.Equals(root.TrimEnd(Path.DirectorySeparatorChar),
-                        Path.GetPathRoot(root)!.TrimEnd(Path.DirectorySeparatorChar),
-                        StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidDataException("Корень диска запрещён.");
-                    for (string? part = root; part is not null; part = Path.GetDirectoryName(part))
-                    {
-                        if (Directory.Exists(part) &&
-                            File.GetAttributes(part).HasFlag(FileAttributes.ReparsePoint))
-                            throw new InvalidDataException("Папки-ссылки запрещены.");
-                        if (Path.GetPathRoot(part) == part) break;
-                    }
-                    bool empty = !Directory.EnumerateFileSystemEntries(root).Any();
-                    bool alreadyManaged = File.Exists(Path.Combine(root, "state.json")) &&
-                        File.Exists(Path.Combine(root, "current", ".uub-managed.json"));
-                    if (!empty && !alreadyManaged)
-                        throw new InvalidDataException("Выберите пустую отдельную папку.");
-                    if (MessageBox.Show(dialog,
-                        "Разрешить агенту устанавливать проверенные по SHA-256 " +
-                        "ZIP-сборки из " + repository.Text.Trim() + " в выбранную папку?\n" +
-                        "GitHub Issues не могут менять папку. Самостоятельный запуск EXE запрещён.",
-                        "Подтверждение локального разрешения",
-                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
-                        return;
+                    if (Directory.Exists(part) &&
+                        File.GetAttributes(part).HasFlag(FileAttributes.ReparsePoint))
+                        throw new InvalidDataException("Папки-ссылки запрещены.");
+                    if (Path.GetPathRoot(part) == part) break;
                 }
+                bool empty = !Directory.EnumerateFileSystemEntries(root).Any();
+                bool alreadyManaged = File.Exists(Path.Combine(root, "state.json")) &&
+                    File.Exists(Path.Combine(root, "current", ".uub-managed.json"));
+                if (!empty && !alreadyManaged)
+                    throw new InvalidDataException("Выберите пустую отдельную папку.");
+                if (MessageBox.Show(dialog,
+                    "Разрешить агенту устанавливать проверенные по SHA-256 " +
+                    "ZIP-сборки из " + repository.Text.Trim() + " в выбранную папку?\n" +
+                    "GitHub Issues не могут менять папку. Самостоятельный запуск EXE запрещён.",
+                    "Подтверждение локального разрешения",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                    return;
+
                 var profiles = LoadProfiles().Where(x =>
                     x.GetProperty("id").GetString() != profileId).Cast<object>().ToList();
-                if (profiles.Count >= 20)
-                    throw new InvalidDataException("Достигнут лимит 20 профилей.");
                 profiles.Add(new
                 {
                     id = profileId, repository = repository.Text.Trim(),
                     assetName = archive.Text.Trim(), entrypoint = entrypoint.Text.Trim(),
-                    installRoot = target, workflowFile = workflow.Text.Trim(), enabled
+                    installRoot = target, workflowFile = workflow.Text.Trim(), enabled = true
                 });
-                Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);
-                string next = SettingsFile + ".next";
-                File.WriteAllText(next, JsonSerializer.Serialize(new
-                {
-                    schema = Schema, profiles
-                }, new JsonSerializerOptions { WriteIndented = true }));
-                File.Move(next, SettingsFile, overwrite: true);
-                MessageBox.Show(dialog, enabled ?
-                    "Разрешение сохранено на этом ПК. GitHub может отправить проверенное задание." :
-                    "Профиль отключён. Новые установки через него запрещены.",
+                PersistProfiles(profiles);
+                MessageBox.Show(dialog,
+                    "Разрешение сохранено на этом ПК. GitHub может отправить проверенное задание.",
                     "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 dialog.Close();
             }
