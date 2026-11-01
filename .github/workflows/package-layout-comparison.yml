@@ -1,0 +1,70 @@
+name: Compare launcher package layouts (read-only experiment)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/package-layout-comparison.yml'
+      - 'docs/UPDATE_ARCHITECTURE_V2.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build package variants and compare actual sizes and file hashes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path './packaging-metrics' | Out-Null
+          $modes = @(
+            @{name='selfcontained-single'; extra=@('--self-contained','true','-p:PublishSingleFile=true','-p:EnableCompressionInSingleFile=true','-p:IncludeNativeLibrariesForSelfExtract=true')},
+            @{name='selfcontained-multifile'; extra=@('--self-contained','true','-p:PublishSingleFile=false')},
+            @{name='frameworkdependent-multifile'; extra=@('--self-contained','false','-p:PublishSingleFile=false')}
+          )
+          $summary = @()
+          foreach ($m in $modes) {
+            $folder = Join-Path (Get-Location) ('packaging-metrics/' + $m.name)
+            $dotnetArgs = @('publish','./src/uUnityBridge.csproj','-c','Release','-r','win-x64','-o',$folder) + $m.extra + @('-p:DebugType=None')
+            & dotnet @dotnetArgs
+            if ($LASTEXITCODE -ne 0) { throw ('Publish failed: ' + $m.name) }
+            $files = @(Get-ChildItem -LiteralPath $folder -File -Recurse)
+            $manifest = @($files | ForEach-Object {
+                [ordered]@{
+                  path = [System.IO.Path]::GetRelativePath($folder, $_.FullName).Replace('\','/')
+                  bytes = $_.Length
+                  sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+                }
+            })
+            $total = ($files | Measure-Object -Property Length -Sum).Sum
+            if ($null -eq $total) { $total = 0 }
+            $exePath = Join-Path $folder 'uUnityBridge.exe'
+            if (-not (Test-Path $exePath)) { throw ('Missing main EXE: ' + $m.name) }
+            $exeSize = (Get-Item $exePath).Length
+            $summary += [pscustomobject]@{
+              mode=$m.name
+              fileCount=$files.Count
+              totalBytes=$total
+              exeBytes=$exeSize
+            }
+            $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path './packaging-metrics' ($m.name+'.manifest.json')) -Encoding UTF8
+            Write-Host ('PACKAGING ' + $m.name + ' files=' + $files.Count + ' totalBytes=' + $total + ' exeBytes=' + $exeSize)
+            # The experiment only stores per-file metrics, not the executables themselves.
+            Remove-Item -LiteralPath $folder -Recurse -Force
+          }
+          $summary | Format-Table | Out-String | Write-Host
+          $summary | ConvertTo-Json -Depth 4 | Set-Content './packaging-metrics/summary.json' -Encoding UTF8
+          $summary | Export-Csv './packaging-metrics/summary.csv' -NoTypeInformation -Encoding UTF8
+      - name: Upload only size and checksum reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-layout-metrics
+          path: packaging-metrics/*.json
+          if-no-files-found: error
