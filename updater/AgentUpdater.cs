@@ -89,62 +89,20 @@ internal static class AgentUpdater
              nextVersion <= previousVersion))
             throw new InvalidDataException("Agent version is not a valid upgrade.");
 
-        Directory.CreateDirectory(Backups);
-        string backup = Path.Combine(Backups, "agent-" + Guid.NewGuid().ToString("N") + ".exe");
-        File.Copy(target, backup, overwrite: false);
-        string backupHash = Hash(backup);
-        // Single use: a retry needs a new explicit GUI confirmation.
+        // A one-time approval cannot be replayed; failed attempts require fresh
+        // explicit confirmation in the Desktop GUI.
         File.Delete(Approval);
-
-        string nextFile = target + ".uub-next";
-        if (File.Exists(nextFile))
-            throw new InvalidDataException("Previous staging file must be examined.");
-        Process? candidateProcess = null;
-        bool replaced = false;
-        try
-        {
-            StopExactAgent(target);
-            File.Copy(candidate, nextFile, overwrite: false);
-            if (Hash(nextFile) != shaArg)
-                throw new InvalidDataException("Copied agent failed SHA256.");
-            File.Move(nextFile, target, overwrite: true);
-            replaced = true;
-            if (Hash(target) != shaArg)
-                throw new InvalidDataException("Agent verification failed after swap.");
-            candidateProcess = LaunchAgent(target);
-            if (!WaitForHealth(target, candidateProcess, nextVersion))
-                throw new IOException("Updated agent did not report healthy IPC.");
-        }
-        catch
-        {
-            if (candidateProcess is not null)
+        _ = AgentUpgradeTransaction.Apply(target, candidate, shaArg, Backups,
+            stopExactProcess: () => StopExactAgent(target),
+            launchAndProbeHealth: () =>
             {
-                try
-                {
-                    if (!candidateProcess.HasExited)
-                    {
-                        candidateProcess.Kill(entireProcessTree: true);
-                        candidateProcess.WaitForExit(10000);
-                    }
-                }
-                catch { /* Recovery will fail closed if the target remains locked. */ }
-                finally { candidateProcess.Dispose(); }
-            }
-            if (replaced)
+                using var started = LaunchAgent(target);
+                return WaitForHealth(target, started, nextVersion);
+            },
+            restartPrevious: () =>
             {
-                File.Copy(backup, target, overwrite: true);
-                if (Hash(target) != backupHash)
-                    throw new IOException("Restored agent hash mismatch.");
-            }
-            try { LaunchAgent(target).Dispose(); }
-            catch { /* Best-effort restart of old version, logged as FAIL. */ }
-            throw;
-        }
-        finally
-        {
-            candidateProcess?.Dispose();
-            // Do not delete an unexpected file which may belong to another attempt.
-        }
+                using var restarted = LaunchAgent(target);
+            });
     }
 
     private static Process LaunchAgent(string file)
