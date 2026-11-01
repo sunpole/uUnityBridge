@@ -32,6 +32,36 @@ $selectedRun = $matchingRuns | Sort-Object -Property databaseId -Descending | Se
     return $id
 }
 
+# Pure preflight: "missing" is expected and must never require a CLI call
+# that emits HTTP 404 to PowerShell stderr.
+function Get-HistoricalReleaseState($Releases, $Refs, [string]$Tag, [string]$Sha) {
+    $releaseCount = 0
+    foreach ($release in $Releases) {
+        if ($release.tagName -ceq $Tag) { $releaseCount++ }
+    }
+    $refCount = 0
+    $refSha = ''
+    $refType = ''
+    foreach ($reference in $Refs) {
+        if ($reference.ref -ceq ('refs/tags/' + $Tag)) {
+            $refCount++
+            $refSha = [string]$reference.object.sha
+            $refType = [string]$reference.object.type
+        }
+    }
+    if ($releaseCount -gt 1 -or $refCount -gt 1) {
+        throw "Ambiguous GitHub release or tag: $Tag"
+    }
+    if ($releaseCount -eq 1) {
+        if ($refCount -ne 1 -or $refType -ne 'commit' -or $refSha -ne $Sha) {
+            throw "Existing release target mismatch: $Tag"
+        }
+        return 'published'
+    }
+    if ($refCount -ne 0) { throw "Existing tag without release: $Tag" }
+    return 'missing'
+}
+
 if ($SelfTest) {
     $sha = ('a' * 40)
     $sample = @(1..8 | ForEach-Object {
@@ -48,6 +78,21 @@ if ($SelfTest) {
         throw "CI run ID selection test failed: $chosen"
     }
     Write-Host 'PASS: 8 GitHub runs reduced to the single matching run ID'
+    $sampleSha = 'c' * 40
+    $empty = @()
+    if ((Get-HistoricalReleaseState $empty $empty 'v0.1.0' $sampleSha) -ne 'missing') {
+        throw 'Missing historical Release was not recognized correctly.'
+    }
+    $published = @([pscustomobject]@{tagName='v0.1.0'})
+    $refs = @([pscustomobject]@{ref='refs/tags/v0.1.0'; object=[pscustomobject]@{type='commit'; sha=$sampleSha}})
+    if ((Get-HistoricalReleaseState $published $refs 'v0.1.0' $sampleSha) -ne 'published') {
+        throw 'Existing historical Release was not preserved.'
+    }
+    $orphanRejected = $false
+    try { Get-HistoricalReleaseState $empty $refs 'v0.1.0' $sampleSha | Out-Null }
+    catch { $orphanRejected = $true }
+    if (-not $orphanRejected) { throw 'Orphaned historical tag was not rejected.' }
+    Write-Host 'PASS: missing, published and orphaned release states without 404 probes.'
     return
 }
 
@@ -64,10 +109,10 @@ $runId = Select-HistoricalRunId -Json ($runList -join [Environment]::NewLine) -H
 # stderr and PowerShell 5.1 throws NativeCommandError under Stop preference.
 $releaseListJson = gh release list -R $repo --limit 100 --json tagName
 if ($LASTEXITCODE -ne 0) { throw 'Cannot list GitHub Releases.' }
-$releaseList = @(ConvertFrom-Json -InputObject ($releaseListJson -join [Environment]::NewLine))
+$releaseList = ConvertFrom-Json -InputObject ($releaseListJson -join [Environment]::NewLine)
 $tagRefsJson = gh api ("repos/" + $repo + "/git/matching-refs/tags/v")
 if ($LASTEXITCODE -ne 0) { throw 'Cannot list GitHub tag references.' }
-$tagRefs = @(ConvertFrom-Json -InputObject ($tagRefsJson -join [Environment]::NewLine))
+$tagRefs = ConvertFrom-Json -InputObject ($tagRefsJson -join [Environment]::NewLine)
 Write-Host "Preflight: $($releaseList.Count) releases, $($tagRefs.Count) tags."
 
 $temp = Join-Path $env:TEMP ('uub-history-' + [Guid]::NewGuid().ToString('N'))
@@ -100,21 +145,10 @@ try {
        throw "SHA256 mismatch: $tag"
      }
    }
-   $matchingReleases = @($releaseList | Where-Object { $_.tagName -ceq $tag })
-   $matchingRefs = @($tagRefs | Where-Object { $_.ref -ceq ("refs/tags/" + $tag) })
-   if ($matchingReleases.Count -gt 1 -or $matchingRefs.Count -gt 1) {
-     throw "Ambiguous GitHub release or tag: $tag"
-   }
-   if ($matchingReleases.Count -eq 1) {
-     if ($matchingRefs.Count -ne 1 -or $matchingRefs[0].object.type -ne 'commit' -or
-         $matchingRefs[0].object.sha -ne $sha) {
-       throw "Existing release target mismatch: $tag"
-     }
+   $state = Get-HistoricalReleaseState $releaseList $tagRefs $tag $sha
+   if ($state -eq 'published') {
      Write-Host "PRESERVE $tag"
      continue
-   }
-   if ($matchingRefs.Count -ne 0) {
-     throw "Existing tag without release: $tag"
    }
    $notes = @(
       "Исторический выпуск $tag",
