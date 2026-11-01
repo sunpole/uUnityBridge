@@ -30,6 +30,11 @@ jobs:
         run: |
           dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Agent protocol self-tests failed.' }
+      - name: Test ZIP security in isolated CI temporary directory
+        shell: pwsh
+        run: |
+          dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --deployment-self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Deployment ZIP self-tests failed.' }
       - name: Publish standalone agent preview to CI artifacts only
         shell: pwsh
         run: |
