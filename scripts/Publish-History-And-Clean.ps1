@@ -1,6 +1,6 @@
 # Owner-reviewed one-time historical archive publication + optional reversible QA cleanup.
 [CmdletBinding()]
-param([switch]$Clean)
+param([switch]$Clean, [switch]$SelfTest)
 $ErrorActionPreference = 'Stop'
 $repo = 'sunpole/uUnityBridge'
 $history = @(
@@ -10,20 +10,14 @@ $history = @(
  @{v='0.3.0';sha='d2dd9022b538e5f3ba8a39ca7d55dd6e3a428798'},
  @{v='0.4.0';sha='8e2979b5397229ff17826c72c6e0916b2a43edc0'}
 )
-$who = gh api user --jq .login
-if ($LASTEXITCODE -ne 0 -or $who.Trim() -ne 'sunpole') { throw 'gh login must be sunpole.' }
-$mainSha = (gh api ("repos/" + $repo + "/git/ref/heads/main") --jq '.object.sha').Trim()
-if ($LASTEXITCODE -ne 0 -or $mainSha.Length -ne 40) { throw 'Main commit unavailable.' }
-$runList = gh run list -R $repo -w archive-historical-releases.yml -L 20 --json databaseId,status,conclusion,event,headSha
-if ($LASTEXITCODE -ne 0) { throw 'GitHub Actions unavailable.' }
-# Important: in Windows PowerShell 5.1 a JSON array may travel through
-# the pipeline as ONE nested array. Property access then expands ALL run IDs.
-# Enumerate the parsed objects explicitly and require one scalar run ID.
-$parsedRuns = ConvertFrom-Json -InputObject ($runList -join [Environment]::NewLine)
+function Select-HistoricalRunId([string]$Json, [string]$Head) {
+    # PowerShell 5.1 sometimes passes JSON arrays as a single pipeline item.
+    # Explicit iteration avoids expanding all databaseId values into gh arguments.
+$parsedRuns = ConvertFrom-Json -InputObject ($Json)
 $matchingRuns = @()
 foreach ($item in $parsedRuns) {
     if ($item.status -eq 'completed' -and $item.conclusion -eq 'success' -and
-        $item.event -eq 'push' -and $item.headSha -eq $mainSha) {
+        $item.event -eq 'push' -and $item.headSha -eq $Head) {
         $matchingRuns += $item
     }
 }
@@ -31,8 +25,39 @@ if ($matchingRuns.Count -eq 0) {
     throw 'No successful archived-build run for exact main commit.'
 }
 $selectedRun = $matchingRuns | Sort-Object -Property databaseId -Descending | Select-Object -First 1
-$runId = [string]$selectedRun.databaseId
-if ($runId -notmatch '^[1-9][0-9]*
+    $id = [string]$selectedRun.databaseId
+    if ($id -notmatch '^[1-9][0-9]*$') {
+        throw "Invalid or non-scalar GitHub run ID: $id"
+    }
+    return $id
+}
+
+if ($SelfTest) {
+    $sha = ('a' * 40)
+    $sample = @(1..8 | ForEach-Object {
+        [pscustomobject]@{
+            databaseId=(400000 + $_); status='completed'; conclusion='failure';
+            event='push'; headSha=('b' * 40)
+        }
+    })
+    $sample[6].conclusion = 'success'
+    $sample[6].headSha = $sha
+    $json = ConvertTo-Json -InputObject $sample -Depth 3
+    $chosen = Select-HistoricalRunId -Json $json -Head $sha
+    if ($chosen -ne '400007') {
+        throw "CI run ID selection test failed: $chosen"
+    }
+    Write-Host 'PASS: 8 GitHub runs reduced to the single matching run ID'
+    return
+}
+
+$who = gh api user --jq .login
+if ($LASTEXITCODE -ne 0 -or $who.Trim() -ne 'sunpole') { throw 'gh login must be sunpole.' }
+$mainSha = (gh api ("repos/" + $repo + "/git/ref/heads/main") --jq '.object.sha').Trim()
+if ($LASTEXITCODE -ne 0 -or $mainSha.Length -ne 40) { throw 'Main commit unavailable.' }
+$runList = gh run list -R $repo -w archive-historical-releases.yml -L 20 --json databaseId,status,conclusion,event,headSha
+if ($LASTEXITCODE -ne 0) { throw 'GitHub Actions unavailable.' }
+$runId = Select-HistoricalRunId -Json ($runList -join [Environment]::NewLine) -Head $mainSha
 $temp = Join-Path $env:TEMP ('uub-history-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $temp | Out-Null
 try {
