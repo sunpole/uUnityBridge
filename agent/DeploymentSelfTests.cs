@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 
 namespace uUnityBridge.Agent;
 
@@ -70,7 +71,19 @@ internal static class DeploymentSelfTests
             }
             catch (InvalidDataException) { }
 
-            Console.WriteLine("PASS: ZIP extraction, traversal, symlink, case collisions (temporary CI folder).");
+            string expected = new string('a', 64);
+            using (var withDigest = JsonDocument.Parse("{\"digest\":\"sha256:" + expected + "\"}"))
+            using (var noDigest = JsonDocument.Parse("{\"name\":\"test.zip\"}"))
+            using (var wrongDigest = JsonDocument.Parse("{\"digest\":\"sha256:" +
+                new string('b', 64) + "\"}"))
+            {
+                if (!ReleaseDeployment.HasMatchingPublishedDigest(withDigest.RootElement, expected) ||
+                    ReleaseDeployment.HasMatchingPublishedDigest(noDigest.RootElement, expected) ||
+                    ReleaseDeployment.HasMatchingPublishedDigest(wrongDigest.RootElement, expected))
+                    throw new Exception("Release digest trust boundary failed.");
+            }
+
+            Console.WriteLine("PASS: ZIP extraction, traversal, symlink, case collisions and required Release digest (temporary CI folder).");
             return 0;
         }
         finally
