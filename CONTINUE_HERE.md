@@ -6,6 +6,76 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## Новейшая контрольная точка — 2026-11-01, P0010-D: изолированная Windows QA
+
+**Статус:** ветка PR #25 содержит новый testable agent upgrade,
+Windows CI для ТОЧНОГО HEAD **3/3 PASS**. Это **НЕ** означает установку
+новой версии на рабочий ПК. **PR #25 Draft, стабильный Release v0.4.2.**
+
+- **PR:** [#25](https://github.com/sunpole/uUnityBridge/pull/25),
+  ветка `feature/p0010-safe-release-deploy`,
+  проверенный HEAD `fb840d1bf6bf0de623ec129fb0f70e858b0d78e1`.
+- **Техническая реализация:** добавлен `updater/AgentUpgradeTransaction.cs`.
+  Реальный helper `updater/AgentUpdater.cs` теперь использует этот
+  модуль для проверенного копирования, переключения EXE,
+  ожидания `health`, сохранения SHA-256 старой версии и rollback.
+  Границы процессов передаются тестовыми callbacks, поэтому
+  CI не останавливает пользовательские процессы.
+- **Windows fault-injection:** новый проект
+  `tests/uUnityBridge.UpgradeTests` (запускается только при
+  `GITHUB_ACTIONS=true`, использует только `RUNNER_TEMP`).
+  Проверки: недоступный файл после сбоя сети, обрезанная загрузка,
+  плохой SHA-256, чужой staging, эксклюзивная блокировка Windows EXE
+  до и после backup, отказ остановки процесса, неудачный `health`,
+  исключение IPC, успешный update и проверенный hash backup.
+  **Сбои сети имитируются отсутствием/обрезкой файла**, а не
+  реальным разрывом GitHub/CDN. EXE-файлы в этих тестах —
+  безвредные временные текстовые фикстуры.
+- **Локальный API:** `agent/LocalIpcSelfTests.cs` реально открывает
+  временную Windows Named Pipe `CurrentUserOnly` и проверяет
+  `health`, `capabilities`, отказ от неизвестного `powershell`.
+  Это не полный запуск постоянно работающего агента из
+  непривилегированной пользовательской сессии.
+- **Windows CI PASS на HEAD:**
+  [Desktop/upgrade #41333118950](https://github.com/sunpole/uUnityBridge/actions/runs/41333118950),
+  [Agent/IPC #41333118927](https://github.com/sunpole/uUnityBridge/actions/runs/41333118927),
+  [Manifest #41333119066](https://github.com/sunpole/uUnityBridge/actions/runs/41333119066).
+- `.github/workflows/release-windows.yml` обновлён:
+  до публикации стабильных assets он **должен** запускать UpgradeTests
+  и IPC-self-test. Сам release workflow по этому PR **не выполнялся**,
+  поскольку работает по `workflow_dispatch` только на `main`.
+- Подробный план и точная граница доказанных проверок:
+  [docs/P0010_WINDOWS_QA_RELEASE_GATE.md](https://github.com/sunpole/uUnityBridge/blob/feature/p0010-safe-release-deploy/docs/P0010_WINDOWS_QA_RELEASE_GATE.md).
+- **Безопасный порядок:**
+  1. Завершить код-ревью и **отдельный QA в изолированной VM** под
+     обычным Windows-пользователем. Проверить настоящие EXE 0.4.2/0.2.1,
+     GUI, старый updater 0.4.0, backup, rollback, Named Pipe,
+     поведение при блокировках и перезагрузке.
+  2. Проверить и защитить права `main`, release-workflow и публикации
+     assets; для production нужна подпись/аттестация происхождения.
+  3. Только после PASS этих ворот объединить **тот же** PR #25 и
+     повторить main CI; затем опубликовать стабильный `v0.4.3`
+     через существующий `release-windows.yml` с точным version.
+  4. Проверить tag SHA, успешный release run, опубликованные asset
+     ID и SHA-256 digest для Desktop, Updater, Agent и ZIP.
+  5. **С явного действия пользователя** открыть Desktop 0.4.2;
+     старый updater 0.4.0 заменяет **Desktop**, но не себя.
+     В новом Desktop 0.4.3 через GUI «Обновить агент»
+     отдельно подтвердить upgrade Agent 0.2.1 с резервной копией
+     и проверкой `health`.
+  6. Локально разрешить **отдельную пустую тестовую папку**,
+     проверить новый read-only `status` и только затем реальный
+     типизированный `install_release`, повторы и rollback.
+  7. Скриншотер/GUI launch — следующие отдельные этапы, не P0010.
+- **ПК пользователя не менялся:** по последней диагностике
+  установлены Desktop `0.4.2.0`, Agent `0.2.1.0`,
+  Updater `0.4.0.0`. Этот чат не заменял файлы и не отправлял
+  задания установки. Локальная копия `CONTINUE_HERE.md`
+  **этой записью не синхронизирована**; актуальная копия в GitHub main.
+- **Стоп-условие:** не сливать Draft PR и не публиковать новый
+  стабильный Release лишь на основании зелёного CI:
+  реальные VM/user-session E2E и происхождение assets ещё не проверены.
+
 ## Актуальная контрольная точка — 2026-11-01, P0010-C (PR #25)
 
 **Результат:** исправления безопасности и логики разрешений реализованы;
