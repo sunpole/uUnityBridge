@@ -1,0 +1,48 @@
+name: Unity Editor MVP contract (no Unity runtime)
+
+on:
+  pull_request:
+    paths:
+      - 'unity/**'
+      - 'tests/uUnityBridge.UnityContractTests/**'
+      - '.github/workflows/unity-editor-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unity-contract:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Validate Unity Editor UPM manifest and four typed API methods
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = './unity/Packages/com.sunpole.uunitybridge'
+          $package = Get-Content "$root/package.json" -Raw | ConvertFrom-Json
+          if ($package.name -ne 'com.sunpole.uunitybridge' -or $package.unity -ne '6000.3') { throw 'Invalid Unity package manifest' }
+          $assembly = Get-Content "$root/Editor/uUnityBridge.Editor.asmdef" -Raw | ConvertFrom-Json
+          if (@($assembly.includePlatforms).Count -ne 1 -or $assembly.includePlatforms[0] -ne 'Editor') { throw 'Package must be Editor-only' }
+          $commands = Get-Content "$root/Editor/UnityBridgeEditorCommands.cs" -Raw
+          $policy = Get-Content "$root/Editor/UnityBridgePolicy.cs" -Raw
+          foreach ($action in @('unity_status','create_scene','create_platform','save_scene')) {
+            if (!$policy.Contains('case "' + $action + '"')) { throw "Action missing: $action" }
+          }
+          foreach ($method in @('ExecuteLocal','CreateScene','CreatePlatform','SaveScene')) {
+            if (!$commands.Contains($method)) { throw "Editor method missing: $method" }
+          }
+          if ($commands -match 'Process[.]Start|System[.]Diagnostics[.]Process|HttpClient|WebRequest') { throw 'Unexpected process or network API in Unity adapter' }
+          Write-Host 'PASS: package manifest and Editor-only typed command contract'
+      - name: Verify action allowlist and platform bounds without Unity install
+        shell: pwsh
+        run: |
+          dotnet run --project ./tests/uUnityBridge.UnityContractTests/uUnityBridge.UnityContractTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Unity command contract checks failed' }
+          Write-Host 'PASS: static policy only; real Unity Editor E2E still required'
