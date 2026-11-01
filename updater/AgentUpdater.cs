@@ -55,7 +55,7 @@ internal static class AgentUpdater
         var approval = JsonSerializer.Deserialize<ApprovalRecord>(
             File.ReadAllText(Approval), Options) ??
             throw new InvalidDataException("Invalid local authorization.");
-        string stage = Path.GetFullPath(AppContext.BaseDirectory);
+        string stage = Path.TrimEndingDirectorySeparator(Path.GetFullPath(AppContext.BaseDirectory));
         string target = Path.GetFullPath(targetArg);
         string stageRoot = Path.GetFullPath(Staging).TrimEnd(Path.DirectorySeparatorChar)
             + Path.DirectorySeparatorChar;
@@ -67,7 +67,7 @@ internal static class AgentUpdater
             approval.ExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(6) ||
             !string.Equals(Path.GetFullPath(approval.Target), target,
                 StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(Path.GetFullPath(approval.Stage), stage,
+            !string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(approval.Stage)), stage,
                 StringComparison.OrdinalIgnoreCase) ||
             !stage.StartsWith(stageRoot, StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(approval.Sha256, shaArg, StringComparison.Ordinal) ||
@@ -190,7 +190,8 @@ internal static class AgentUpdater
                 if (root.GetProperty("status").GetString() == "ok" &&
                     root.GetProperty("service").GetString() == "uUnityBridge.Agent" &&
                     Version.TryParse(v?.Replace("-preview", ""), out var actual) &&
-                    actual >= required)
+                    new Version(actual.Major, actual.Minor, actual.Build) >=
+                    new Version(required.Major, required.Minor, required.Build))
                     return true;
             }
             catch (JsonException) { }
