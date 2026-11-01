@@ -100,10 +100,10 @@ try
             "pre-existing staging unchanged and old agent intact");
     }
 
-    // Windows exclusive open models a target EXE locked by another process:
-    // the replacement must fail closed, retain old checksum and a backup.
+    // The lock may already be present BEFORE backup. In that case copying
+    // the old bytes must fail closed, without even attempting to stop it.
     {
-        var f = Fixture("locked-target");
+        var f = Fixture("locked-before-backup");
         int stopped = 0, restarted = 0, checkedHealth = 0;
         using (var locked = new FileStream(
             f.target, FileMode.Open, FileAccess.Read, FileShare.None))
@@ -112,14 +112,42 @@ try
                 f.target, f.candidate, f.newHash, f.backups,
                 () => stopped++, () => { checkedHealth++; return true; },
                 () => restarted++),
-                "Windows locked target rejects file replacement");
-            Assert(stopped == 1 && checkedHealth == 0,
-                "locked target rejects swap without launching new agent");
+                "Windows exclusive lock blocks creation of backup");
+            Assert(stopped == 0 && checkedHealth == 0 && restarted == 0,
+                "preexisting lock is refused before any process action");
         }
         Assert(AgentUpgradeTransaction.Hash(f.target) == f.oldHash &&
+            !Directory.EnumerateFiles(f.backups, "*.exe").Any(),
+            "locked-before-backup preserves previous bytes and no partial backup");
+    }
+
+    // A lock can also arise AFTER verified backup, when a process does not
+    // release the target at stop time. The move must fail without corruption.
+    {
+        var f = Fixture("locked-after-backup");
+        int stopped = 0, restarted = 0, checkedHealth = 0;
+        FileStream? delayedLock = null;
+        try
+        {
+            ExpectFailure(() => AgentUpgradeTransaction.Apply(
+                f.target, f.candidate, f.newHash, f.backups,
+                () =>
+                {
+                    stopped++;
+                    delayedLock = new FileStream(f.target,
+                        FileMode.Open, FileAccess.Read, FileShare.None);
+                },
+                () => { checkedHealth++; return true; },
+                () => restarted++),
+                "Windows locked target rejects switch after backup");
+            Assert(stopped == 1 && checkedHealth == 0 && restarted == 1,
+                "late lock skips launch and triggers fallback");
+        }
+        finally { delayedLock?.Dispose(); }
+        Assert(AgentUpgradeTransaction.Hash(f.target) == f.oldHash &&
             Directory.EnumerateFiles(f.backups, "*.exe").Any() &&
-            restarted == 1 && !File.Exists(f.target + ".uub-next"),
-            "locked update preserves previous hash, backup and staging safety");
+            !File.Exists(f.target + ".uub-next"),
+            "late lock preserves old hash, retained backup and cleaned staging");
     }
 
     // Simulate IPC health responding FAIL after a successful swap. Restore
