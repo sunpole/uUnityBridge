@@ -55,6 +55,23 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
+      - name: Package release-style ZIP for deployment QA (CI artifact only)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = (Resolve-Path './dist/win-x64').Path
+          $zip = Join-Path $dir 'uUnityBridge-windows-x64.zip'
+          Compress-Archive -LiteralPath (Join-Path $dir 'uUnityBridge.exe'), (Join-Path $dir 'uUnityBridge.Updater.exe') -DestinationPath $zip -CompressionLevel Optimal
+          Add-Type -AssemblyName System.IO.Compression
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            $names = @($archive.Entries | ForEach-Object { $_.FullName })
+            if ($names.Count -ne 2 -or $names -notcontains 'uUnityBridge.exe' -or $names -notcontains 'uUnityBridge.Updater.exe') {
+              throw 'Deployment ZIP layout is invalid'
+            }
+          } finally { $archive.Dispose() }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText(($zip + '.sha256'), $hash + '  uUnityBridge-windows-x64.zip' + [Environment]::NewLine)
       - name: Upload unsigned build artifact for testing
         uses: actions/upload-artifact@v4
         with:
