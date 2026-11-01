@@ -13,7 +13,7 @@
 | Updater | На ПК был `0.4.0.0`; обновляет Desktop, а не установленный Agent |
 | Agent | На ПК подтверждён `0.2.1.0`, GitHub Issue `status` [PASS](https://github.com/sunpole/uUnityBridge/issues/29) |
 | P0010 | [Draft PR #25](https://github.com/sunpole/uUnityBridge/pull/25): новый безопасный deploy и Agent bootstrap, CI PASS, реальный Windows E2E ещё не пройден |
-| Unity Editor / сцены / скриншоты | **Ещё не реализованы в коде**; первая наблюдаемая цель — Unity Editor MVP |
+| Unity Editor / сцены / скриншоты | **Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30)**: Editor package 0.1.0 и четыре команды, [контрактный CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505). **Unity Hub/Editor у пользователя ещё не установлены, реальная сцена не проверена; скриншотов и удалённого Unity API нет** |
 
 Проверка CI — не доказательство, что программа обновлена на вашем ПК.
 Не заменяйте вручную рабочие EXE и не используйте PR-артефакты как
@@ -33,9 +33,8 @@
 
 ## Ближайшая практическая работа
 
-1. Создать **отдельный тестовый** Unity-проект и открыть его в настоящем Editor.
-2. Разработать в GitHub ограниченный Unity Editor package с командами создания
-   и сохранения тестовой сцены; испытать на настоящем Unity.
+1. Установить **официальный Unity Hub и Unity 6.3 LTS**; создать **отдельный тестовый** Unity-проект `uUnityDemo` и открыть его в настоящем Editor.
+2. Проверить **уже созданный в Draft PR #30** ограниченный Unity Editor package с командами создания и сохранения тестовой сцены **в настоящем Editor**. Windows CI не является этой проверкой.
 3. Довести безопасный release/agent bootstrap PR #25 до отдельного Windows E2E.
 4. Связать API, GUI статуса и согласованный снимок **одного разрешённого окна**
    с GitHub-мостом. Скриншоты не отправлять в публичные Issues.
