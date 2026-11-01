@@ -55,6 +55,16 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
+      - name: Reject unapproved agent bootstrap without touching user files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $helper = (Resolve-Path './dist/win-x64/uUnityBridge.Updater.exe').Path
+          $missing = Join-Path $env:RUNNER_TEMP 'uUnityBridge.Agent.exe'
+          if (Test-Path $missing) { throw 'Unexpected test target exists.' }
+          $result = Start-Process -FilePath $helper -ArgumentList @('agent-apply', $missing, ('0' * 64), ('1' * 32)) -Wait -PassThru
+          if ($result.ExitCode -ne 1 -or (Test-Path $missing)) { throw 'Unapproved bootstrap was not blocked.' }
+          Write-Host 'PASS: unapproved agent update blocked with no target created.'
       - name: Package release-style ZIP for deployment QA (CI artifact only)
         shell: pwsh
         run: |
