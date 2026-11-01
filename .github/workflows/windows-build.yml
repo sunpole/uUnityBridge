@@ -55,6 +55,12 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
+      - name: Isolated agent upgrade QA (no user files, no network or service)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project ./tests/uUnityBridge.UpgradeTests/uUnityBridge.UpgradeTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'P0010 isolated upgrade fault tests failed.' }
       - name: Reject unapproved agent bootstrap without touching user files
         shell: pwsh
         run: |
