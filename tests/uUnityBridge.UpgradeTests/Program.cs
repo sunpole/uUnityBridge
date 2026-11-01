@@ -113,13 +113,13 @@ try
                 () => stopped++, () => { checkedHealth++; return true; },
                 () => restarted++),
                 "Windows locked target rejects file replacement");
-            Assert(stopped == 1 && checkedHealth == 0 &&
-                AgentUpgradeTransaction.Hash(f.target) == f.oldHash,
-                "locked target preserves old bytes without launching new agent");
+            Assert(stopped == 1 && checkedHealth == 0,
+                "locked target rejects swap without launching new agent");
         }
-        Assert(Directory.EnumerateFiles(f.backups, "*.exe").Any() &&
+        Assert(AgentUpgradeTransaction.Hash(f.target) == f.oldHash &&
+            Directory.EnumerateFiles(f.backups, "*.exe").Any() &&
             restarted == 1 && !File.Exists(f.target + ".uub-next"),
-            "locked update retains backup and clears only owned staging");
+            "locked update preserves previous hash, backup and staging safety");
     }
 
     // Simulate IPC health responding FAIL after a successful swap. Restore
