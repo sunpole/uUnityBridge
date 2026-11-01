@@ -31,9 +31,10 @@ jobs:
           if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version' }
           [xml]$project = Get-Content './src/uUnityBridge.csproj'
           if ($project.Project.PropertyGroup.Version -ne $env:RELEASE_VERSION) { throw 'Project version does not match release input' }
-          dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
+          dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o ./dist/win-x64
           if ($LASTEXITCODE -ne 0) { throw 'Main build failed' }
-          dotnet publish ./updater/uUnityBridge.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ./dist/win-x64
+          if ((Get-Item ./dist/win-x64/uUnityBridge.exe).Length -ge 150000000) { throw 'Main EXE exceeds v0.4.0 updater 150MB limit' }
+          dotnet publish ./updater/uUnityBridge.Updater.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o ./dist/win-x64
           if ($LASTEXITCODE -ne 0) { throw 'Updater build failed' }
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
           if ($LASTEXITCODE -ne 0) { throw 'Regression tests failed' }
