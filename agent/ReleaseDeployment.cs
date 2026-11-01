@@ -56,7 +56,9 @@ internal sealed class ReleaseDeployment : IDeploymentExecutor
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException
             or JsonException or UnauthorizedAccessException or InvalidOperationException
-            or OperationCanceledException or System.ComponentModel.Win32Exception)
+            or OperationCanceledException or System.ComponentModel.Win32Exception
+            or KeyNotFoundException or ArgumentException or FormatException
+            or AbandonedMutexException)
         {
             // No paths, user data, stdout/stderr or token material in public Issues.
             return new DeploymentResult("FAIL", "verification_or_install_failed");
