@@ -18,6 +18,29 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - name: Verify QA cleanup script syntax on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $path = (Resolve-Path './scripts/Clean-Local-QA.ps1').Path
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $path, [ref]$tokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Host $_.Message }
+            throw 'Unsafe or invalid cleanup script syntax'
+          }
+          $script = Get-Content -LiteralPath $path -Raw
+          foreach ($allowed in @('uUnityBridge.pdb','uUnityBridge.Updater.pdb')) {
+            if (-not $script.Contains($allowed)) {
+              throw "Expected known debug symbol missing: $allowed"
+            }
+          }
+          if ($script.Contains("'*.pdb'")) {
+            throw 'Wildcard PDB deletion is not permitted'
+          }
+          Write-Host 'PASS: cleanup parser and exact PDB allowlist'
       - name: Publish portable x64 EXE
         shell: pwsh
         run: |
