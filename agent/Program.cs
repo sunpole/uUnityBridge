@@ -19,7 +19,11 @@ internal static class Program
             return await SelfTest.RunAsync();
 
         if (args is ["--deployment-self-test"])
-            return DeploymentSelfTests.Run();
+        {
+            int zip = DeploymentSelfTests.Run();
+            int transaction = DeploymentTransactionTests.Run();
+            return zip == 0 && transaction == 0 ? 0 : 1;
+        }
 
         if (args is ["--diagnose"])
         {
