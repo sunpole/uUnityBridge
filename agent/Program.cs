@@ -17,6 +17,23 @@ internal static class Program
         if (args is ["--self-test"])
             return await SelfTest.RunAsync();
 
+        if (args is ["--relay-once"])
+        {
+            try
+            {
+                int done = await GitHubRelay.RunOnceAsync(
+                    new CliRelayIssueClient(), new GitHubReader(), CancellationToken.None);
+                Console.WriteLine($"Relay completed {done} status tasks.");
+                return 0;
+            }
+            catch (Exception e) when (e is IOException or InvalidOperationException
+                or InvalidDataException or JsonException)
+            {
+                Console.Error.WriteLine("Relay cannot complete: " + e.GetType().Name);
+                return 2;
+            }
+        }
+
         if (args is ["--request", var action])
         {
             try
@@ -43,7 +60,7 @@ internal static class Program
 
         if (args is not [] and not ["--serve"])
         {
-            Console.Error.WriteLine("Use --serve, --request <action>, or --self-test.");
+            Console.Error.WriteLine("Use --serve, --relay-once, --request <action>, or --self-test.");
             return 2;
         }
 
@@ -54,12 +71,13 @@ internal static class Program
             return 3;
         }
 
-        Console.WriteLine("uUnityBridge Agent 0.1 preview: current-user IPC only; no administrator tools.");
+        Console.WriteLine("uUnityBridge Agent 0.2 preview: current-user IPC + outbound GitHub relay; no admin tools.");
         Console.WriteLine("Read-only actions: health, capabilities, github_status, repo_status, workflow_preview.");
-        Console.WriteLine("No TCP ports, no PowerShell execution, no GitHub writes. Ctrl+C to stop.");
+        Console.WriteLine("No TCP ports, no PowerShell. Only validated remote status comments. Ctrl+C to stop.");
         using var stop = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
         IGitHubReader github = new GitHubReader();
+        Task relayLoop = GitHubRelay.PollAsync(github, stop.Token);
 
         while (!stop.IsCancellationRequested)
         {
@@ -89,6 +107,7 @@ internal static class Program
                 Console.Error.WriteLine("Rejected request: " + e.GetType().Name);
             }
         }
+        await relayLoop;
         return 0;
     }
 
@@ -198,7 +217,7 @@ internal static class AgentProtocol
             {
                 "health" => new
                 {
-                    status = "ok", service = "uUnityBridge.Agent", version = "0.1.0-preview",
+                    status = "ok", service = "uUnityBridge.Agent", version = "0.2.0-preview",
                     mode = "read-only", adminToolsEnabled = false, transport = "current-user-named-pipe"
                 },
                 "capabilities" => new
@@ -293,7 +312,8 @@ internal static class SelfTest
             if (doc.RootElement.GetProperty("status").GetString() != "BLOCKED")
                 throw new Exception("Untrusted GH identity was not blocked.");
         }
-        Console.WriteLine($"PASS: {cases.Length + 1} agent protocol tests; no network or user files touched.");
+        await RelayTests.RunAsync();
+        Console.WriteLine($"PASS: {cases.Length + 1} agent protocol tests and GitHub relay tests; no user files touched.");
         return 0;
     }
 }
