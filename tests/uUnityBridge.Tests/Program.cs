@@ -136,12 +136,16 @@ using (var result = JsonDocument.Parse(revoked))
     var updated = result.RootElement.GetProperty("profiles")[0];
     Check(!updated.GetProperty("enabled").GetBoolean(), "revoke disables selected profile");
     foreach (string field in new[] { "id", "repository", "assetName",
-        "entrypoint", "installRoot", "workflowFile", "future" })
-        Check(source.GetProperty(field).GetRawText() ==
-            updated.GetProperty(field).GetRawText(),
+        "entrypoint", "installRoot", "workflowFile" })
+        Check(source.GetProperty(field).GetString() ==
+            updated.GetProperty(field).GetString(),
             "revoke preserves original " + field);
-    Check(approved.RootElement.GetProperty("profiles")[1].GetRawText() ==
-        result.RootElement.GetProperty("profiles")[1].GetRawText(),
+    Check(updated.GetProperty("future").GetProperty("safe").GetInt32() == 23,
+        "revoke preserves future extension fields");
+    var other = result.RootElement.GetProperty("profiles")[1];
+    Check(other.GetProperty("id").GetString() == "b-profile" &&
+        other.GetProperty("repository").GetString() == "sunpole/other" &&
+        other.GetProperty("enabled").GetBoolean(),
         "revoke preserves unrelated profile");
 }
 MustReject(() => DeploymentPermissionData.Revoke(permissionJson, "not-found"),
