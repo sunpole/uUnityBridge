@@ -146,7 +146,7 @@ internal static class DeploymentApprovalDialog
                     if (!empty && !alreadyManaged)
                         throw new InvalidDataException("Выберите пустую отдельную папку.");
                     if (MessageBox.Show(dialog,
-                        "Разрешить агенту устанавливать подписанные контрольной суммой " +
+                        "Разрешить агенту устанавливать проверенные по SHA-256 " +
                         "ZIP-сборки из " + repository.Text.Trim() + " в выбранную папку?\n" +
                         "GitHub Issues не могут менять папку. Самостоятельный запуск EXE запрещён.",
                         "Подтверждение локального разрешения",
