@@ -6,11 +6,13 @@ on:
     paths:
       - '.github/workflows/archive-historical-releases.yml'
       - 'scripts/Archive-Historical-Releases.ps1'
+      - 'scripts/Publish-History-And-Clean.ps1'
   push:
     branches: [main]
     paths:
       - '.github/workflows/archive-historical-releases.yml'
       - 'scripts/Archive-Historical-Releases.ps1'
+      - 'scripts/Publish-History-And-Clean.ps1'
   workflow_dispatch:
 
 permissions:
@@ -33,7 +35,7 @@ jobs:
       - name: Check PowerShell syntax (no cleanup execution)
         shell: pwsh
         run: |
-          foreach ($name in @('./scripts/Clean-Local-QA.ps1', './scripts/Archive-Historical-Releases.ps1')) {
+          foreach ($name in @('./scripts/Clean-Local-QA.ps1', './scripts/Archive-Historical-Releases.ps1', './scripts/Publish-History-And-Clean.ps1')) {
             $tokens = $null
             $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $name).Path, [ref]$tokens, [ref]$errors) | Out-Null
