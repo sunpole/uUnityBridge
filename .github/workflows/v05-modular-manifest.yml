@@ -1,0 +1,55 @@
+name: v0.5 modular manifest foundation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/PackageManifest.cs'
+      - 'tools/PackageManifestBuilder/**'
+      - 'tests/uUnityBridge.Tests/**'
+      - '.github/workflows/v05-modular-manifest.yml'
+      - 'docs/P0006_MANIFEST_QA.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifest:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run pure manifest, PATCH and ANS tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Regression tests failed" }
+      - name: Build compact multi-file package for measurement only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet publish ./src/uUnityBridge.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -p:DebugType=None -o ./staging/compact
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+          if (-not (Test-Path './staging/compact/uUnityBridge.exe')) { throw "Missing app EXE" }
+      - name: Generate SHA256 manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [xml]$proj = Get-Content ./src/uUnityBridge.csproj
+          $version = [string]$proj.Project.PropertyGroup.Version
+          dotnet run --project ./tools/PackageManifestBuilder/PackageManifestBuilder.csproj -c Release -- './staging/compact' $version compact './staging/reports/manifest-compact.json'
+          if ($LASTEXITCODE -ne 0) { throw "Manifest generation failed" }
+          $manifest = Get-Content ./staging/reports/manifest-compact.json -Raw | ConvertFrom-Json
+          if ($manifest.Files.Count -lt 1 -or $manifest.Rid -ne 'win-x64') { throw "Invalid manifest" }
+          $sum = ($manifest.Files | Measure-Object -Property Bytes -Sum).Sum
+          Write-Host "Manifest files=$($manifest.Files.Count) total=$sum"
+      - name: Upload JSON manifest (no executable distribution)
+        uses: actions/upload-artifact@v4
+        with:
+          name: modular-file-manifest-preview
+          path: staging/reports/manifest-compact.json
+          if-no-files-found: error
