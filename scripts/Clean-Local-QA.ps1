@@ -14,7 +14,15 @@ $root = 'C:\!CODE_CLUB\new 2026\017_uunity'
 $app = Join-Path $root 'uUnityBridge_App'
 $repo = 'sunpole/uUnityBridge'
 $names = @('QA-0.2.1','QA-0.3.0','QA-0.4.0')
-$allowedFiles = @('uUnityBridge.exe','uUnityBridge.Updater.exe','uUnityBridge.exe.sha256')
+# Exact names only: debug symbol PDBs are normal CI publish artifacts.
+# Never allow arbitrary *.pdb; unknown names, directories and links stay protected.
+$allowedFiles = @(
+    'uUnityBridge.exe',
+    'uUnityBridge.Updater.exe',
+    'uUnityBridge.exe.sha256',
+    'uUnityBridge.pdb',
+    'uUnityBridge.Updater.pdb'
+)
 $expected = @{
     'QA-0.2.1' = @('0.2.1')
     'QA-0.3.0' = @('0.3.0')
@@ -74,6 +82,13 @@ foreach ($name in $names) {
     })
     if ($unexpected.Count -ne 0) {
         Write-Warning "$name contains additional/linked files: $($unexpected.Name -join ', '). Preserved."
+        continue
+    }
+    # Treat only the two known PDBs as non-executable debug symbols.
+    # Reject unexpectedly large symbols rather than collecting arbitrary data.
+    $symbols = @($children | Where-Object { $_.Extension -ieq '.pdb' })
+    if (@($symbols | Where-Object { $_.Length -gt 100MB }).Count -ne 0) {
+        Write-Warning "$name contains an unexpectedly large PDB; preserved."
         continue
     }
     $qaExe = Join-Path $path 'uUnityBridge.exe'
