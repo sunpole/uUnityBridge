@@ -6,6 +6,13 @@ namespace uUnityBridge;
 internal sealed class MainForm : Form
 {
     private readonly Button copy = BigButton("ОТЧЁТ · НОВЫХ НЕТ", Color.FromArgb(31, 111, 81));
+    private readonly LinkLabel agentBootstrap = new()
+    {
+        Text = "Обновить агент", Dock = DockStyle.Fill,
+        TextAlign = ContentAlignment.MiddleCenter,
+        LinkColor = Color.FromArgb(35, 90, 150), AutoSize = false,
+        Font = new Font("Segoe UI", 10)
+    };
     private readonly LinkLabel deploymentApproval = new()
     {
         Text = "Папка сборок", Dock = DockStyle.Fill,
@@ -53,16 +60,38 @@ internal sealed class MainForm : Form
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3 };
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
+        var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4 };
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 18));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17));
         header.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
             Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold) }, 0, 0);
         header.Controls.Add(rollback, 1, 0);
         header.Controls.Add(deploymentApproval, 2, 0);
+        header.Controls.Add(agentBootstrap, 3, 0);
         deploymentApproval.LinkClicked += (_, _) =>
             DeploymentApprovalDialog.Show(this);
+        agentBootstrap.LinkClicked += async (_, _) =>
+        {
+            if (!agentBootstrap.Enabled) return;
+            agentBootstrap.Enabled = false;
+            try
+            {
+                string result = await AgentBootstrapper.StartAsync(this);
+                MessageBox.Show(this, result, "Обновление агента",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch
+            {
+                MessageBox.Show(this,
+                    "Не удалось проверить или получить обновление агента. " +
+                    "Установленная версия не менялась. Проверьте GitHub и соединение.",
+                    "Обновление заблокировано", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally { agentBootstrap.Enabled = true; }
+        };
         rollback.Visible = ReleaseUpdater.BackupAvailable();
         rollback.LinkClicked += (_, _) =>
         {
