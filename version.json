@@ -1,0 +1,171 @@
+{
+  "schema": "uub.version.history.v1",
+  "lastReviewedOn": "2026-11-01",
+  "reference": "https://github.com/sunpole/uUnityBridge/blob/main/CONTINUE_HERE.md",
+  "purpose": "Документальный снимок, не телеметрия установленной программы и не доказательство готовности",
+  "stableRelease": {
+    "tag": "v0.4.2",
+    "component": "Desktop",
+    "published": true,
+    "url": "https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2"
+  },
+  "lastUserReportedInstallation": {
+    "source": "Windows PowerShell read-only diagnostic supplied by user, 2026-11-01",
+    "desktop": "0.4.2.0",
+    "updater": "0.4.0.0",
+    "agent": "0.2.1.0",
+    "agentProcessObserved": true,
+    "unityIntegrationInstalled": false,
+    "afterThisDateUnverified": true
+  },
+  "development": {
+    "pullRequest": 25,
+    "url": "https://github.com/sunpole/uUnityBridge/pull/25",
+    "state": "draft",
+    "referenceCommit": "fb840d1bf6bf0de623ec129fb0f70e858b0d78e1",
+    "desktopPreview": "0.4.3",
+    "agentPreview": "0.3.0",
+    "released": false,
+    "installedOnUserPc": false,
+    "windowsCi": [
+      "https://github.com/sunpole/uUnityBridge/actions/runs/41333118950",
+      "https://github.com/sunpole/uUnityBridge/actions/runs/41333118927",
+      "https://github.com/sunpole/uUnityBridge/actions/runs/41333119066"
+    ]
+  },
+  "goals": [
+    {
+      "id": "P0009",
+      "name": "Двусторонний GitHub relay status",
+      "status": "done",
+      "blocking": false,
+      "proof": "https://github.com/sunpole/uUnityBridge/issues/29",
+      "note": "Проверена только операция status, без установки ПО"
+    },
+    {
+      "id": "P0010",
+      "name": "Доставка Release и обновление Agent",
+      "status": "ci_pass_qa_pending",
+      "blocking": true,
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/25",
+      "next": "Реальный Windows E2E в изолированном профиле и безопасный выпуск"
+    },
+    {
+      "id": "UNITY-MVP",
+      "name": "Unity Editor API: создать и сохранить тестовую сцену",
+      "status": "planned",
+      "blocking": true,
+      "proof": null,
+      "next": "Открыть Unity-проект, разработать editor package и проверить изменение сцены"
+    },
+    {
+      "id": "P0011",
+      "name": "Полный мост GitHub → Windows → приложение → результат",
+      "status": "in_development",
+      "blocking": true,
+      "proof": "https://github.com/sunpole/uUnityBridge/issues/23",
+      "next": "Этапное выполнение после ограниченного MVP"
+    },
+    {
+      "id": "P0012",
+      "name": "Надёжный Agent и обновление с откатом",
+      "status": "in_development",
+      "blocking": true,
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/25",
+      "next": "GUI, реальные версии и перезапуск Windows"
+    },
+    {
+      "id": "P0013",
+      "name": "Диагностика и видимое состояние агента",
+      "status": "planned",
+      "blocking": true,
+      "proof": null,
+      "next": "UI online/offline, версии, задачи и ошибки"
+    },
+    {
+      "id": "P0014",
+      "name": "Типизированный запуск разрешённого Unity и тестирование",
+      "status": "planned",
+      "blocking": true,
+      "proof": null,
+      "next": "Запуск только зарегистрированного проекта и команды Unity Editor"
+    },
+    {
+      "id": "P0015",
+      "name": "Приватный скриншот только окна Unity",
+      "status": "planned",
+      "blocking": true,
+      "proof": null,
+      "next": "Разрешение пользователя, ограниченный capture и безопасная передача"
+    },
+    {
+      "id": "P0016",
+      "name": "Полный видимый цикл ChatGPT → Unity → скриншот",
+      "status": "planned",
+      "blocking": true,
+      "proof": null,
+      "next": "Сквозная проверка с пользователем"
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-11-01",
+      "version": "v0.4.2",
+      "kind": "stable_release",
+      "result": "Опубликован стабильный Desktop; Agent 0.2.1 установлен отдельно",
+      "proof": "https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2"
+    },
+    {
+      "date": "2026-11-01",
+      "version": "Agent 0.2.1",
+      "kind": "user_confirmed",
+      "result": "Работающий агент и GitHub status relay PASS, без Unity",
+      "proof": "https://github.com/sunpole/uUnityBridge/issues/29"
+    },
+    {
+      "date": "2026-11-01",
+      "version": "Desktop 0.4.3 + Agent 0.3.0 preview",
+      "kind": "draft_ci",
+      "result": "Тесты безопасного обновления, rollback, Windows Named Pipe PASS; локальный E2E ещё не проверен",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/25"
+    },
+    {
+      "date": null,
+      "version": "v0.4.1",
+      "kind": "prior_release",
+      "result": "Предыдущий выпуск Desktop; точная дата в данном снимке не устанавливалась",
+      "proof": "https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.1"
+    },
+    {
+      "date": null,
+      "version": "v0.1.0–v0.4.0",
+      "kind": "historical_rebuilds",
+      "result": "Ранние версии зафиксированы в историческом журнале; архивные пересборки не приравнивать к исходным EXE",
+      "proof": "https://github.com/sunpole/uUnityBridge/blob/main/docs/HISTORICAL_RELEASES.md"
+    }
+  ],
+  "completion": {
+    "allBlockingGoalsDone": false,
+    "declaredComplete": false,
+    "announcement": "ТЕКУЩИЙ НАБОР ЦЕЛЕЙ ЗАВЕРШЁН. НУЖНЫ НОВЫЕ ЦЕЛИ",
+    "requiredEvidence": [
+      "GitHub PR/commit",
+      "Windows CI success",
+      "изолированный E2E для установки",
+      "release + hashes если применимо",
+      "Unity Editor результат в реальном проекте",
+      "разрешённый screenshot E2E",
+      "пользовательская приёмка"
+    ],
+    "noAutomaticCompletionFromCi": true,
+    "automationRequiredForProactiveNotice": true
+  },
+  "links": {
+    "rules": "AGENTS.md",
+    "milestones": "docs/GOALS_AND_ACCEPTANCE.md",
+    "agentRules": "agent/GOAL_REPORTING.md",
+    "handoff": "CONTINUE_HERE.md",
+    "humanHistory": "version.md",
+    "visualHistory": "version.html"
+  }
+}
