@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
+using System.Security.Principal;
 
 namespace uUnityBridge.Agent;
 
@@ -16,6 +17,21 @@ internal static class Program
     {
         if (args is ["--self-test"])
             return await SelfTest.RunAsync();
+
+        if (args is ["--diagnose"])
+        {
+            // A local, read-only check requiring no pipe connection or GitHub token.
+            using var identity = WindowsIdentity.GetCurrent();
+            bool elevated = new WindowsPrincipal(identity)
+                .IsInRole(WindowsBuiltInRole.Administrator);
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                service = "uUnityBridge.Agent", version = "0.2.1-preview",
+                isElevated = elevated,
+                expectedExecution = "same standard Windows user/session for server and client"
+            }));
+            return 0;
+        }
 
         if (args is ["--relay-once"])
         {
@@ -51,6 +67,16 @@ internal static class Program
                 Console.WriteLine(reply);
                 return 0;
             }
+            catch (UnauthorizedAccessException)
+            {
+                // PipeOptions.CurrentUserOnly on Windows is sensitive to the
+                // process security context and elevation. Do not silently
+                // weaken the pipe security or request administrator rights.
+                Console.Error.WriteLine("BLOCKED: Named Pipe access denied. " +
+                    "Run both agent and client as the same standard Windows user. " +
+                    "Do not elevate either process.");
+                return 4;
+            }
             catch (Exception e) when (e is IOException or TimeoutException or OperationCanceledException)
             {
                 Console.Error.WriteLine("Agent connection failed: " + e.GetType().Name);
@@ -60,8 +86,20 @@ internal static class Program
 
         if (args is not [] and not ["--serve"])
         {
-            Console.Error.WriteLine("Use --serve, --relay-once, --request <action>, or --self-test.");
+            Console.Error.WriteLine("Use --serve, --relay-once, --request <action>, --diagnose, or --self-test.");
             return 2;
+        }
+
+        // A background agent must never inherit admin privileges accidentally.
+        // Local project and GitHub read/write functionality should not run
+        // elevated; future privileged operations will require a separate broker.
+        using (var identity = WindowsIdentity.GetCurrent())
+        {
+            if (new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                Console.Error.WriteLine("BLOCKED: Start the agent in a non-elevated Windows session.");
+                return 5;
+            }
         }
 
         using var mutex = new Mutex(true, @"Local\uUnityBridge.Agent.v1", out bool ownsMutex);
@@ -71,7 +109,7 @@ internal static class Program
             return 3;
         }
 
-        Console.WriteLine("uUnityBridge Agent 0.2 preview: current-user IPC + outbound GitHub relay; no admin tools.");
+        Console.WriteLine("uUnityBridge Agent 0.2.1 preview: current-user IPC + outbound GitHub relay; no admin tools.");
         Console.WriteLine("Read-only actions: health, capabilities, github_status, repo_status, workflow_preview.");
         Console.WriteLine("No TCP ports, no PowerShell. Only validated remote status comments. Ctrl+C to stop.");
         using var stop = new CancellationTokenSource();
@@ -217,7 +255,7 @@ internal static class AgentProtocol
             {
                 "health" => new
                 {
-                    status = "ok", service = "uUnityBridge.Agent", version = "0.2.0-preview",
+                    status = "ok", service = "uUnityBridge.Agent", version = "0.2.1-preview",
                     mode = "read-only", adminToolsEnabled = false, transport = "current-user-named-pipe"
                 },
                 "capabilities" => new

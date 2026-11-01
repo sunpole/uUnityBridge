@@ -36,6 +36,16 @@ jobs:
           dotnet publish ./agent/uUnityBridge.Agent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o ./dist/agent-preview
           if ($LASTEXITCODE -ne 0) { throw 'Agent publish failed.' }
           if (-not (Test-Path ./dist/agent-preview/uUnityBridge.Agent.exe)) { throw 'Agent executable missing.' }
+      - name: Verify standard-user agent diagnostic without opening IPC
+        shell: pwsh
+        run: |
+          $diagnostic = & ./dist/agent-preview/uUnityBridge.Agent.exe --diagnose | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or
+              $diagnostic.isElevated -isnot [bool] -or
+              $diagnostic.version -ne '0.2.1-preview') {
+            throw 'Agent diagnostic output is invalid.'
+          }
+          Write-Host "PASS: identity diagnostic; elevated=$($diagnostic.isElevated)"
       - name: Smoke test published EXE without running a service
         shell: pwsh
         run: |
@@ -46,6 +56,17 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $exe = (Resolve-Path ./dist/agent-preview/uUnityBridge.Agent.exe).Path
+          $identity = (& $exe --diagnose | ConvertFrom-Json)
+          if ($identity.isElevated) {
+            # Hosted Windows runners can be elevated; this test must then
+            # prove the server refuses startup, not weaken its protections.
+            $blocked = & $exe --serve 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 5 -or $blocked -notmatch 'BLOCKED') {
+              throw 'Elevated agent did not refuse to start.'
+            }
+            Write-Host 'PASS: elevated Windows runner correctly blocked from serving.'
+            return
+          }
           $agent = Start-Process -FilePath $exe -ArgumentList '--serve' -PassThru -WindowStyle Hidden
           try {
             $reply = $null
