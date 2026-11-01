@@ -32,7 +32,8 @@ jobs:
           $summary = @()
           foreach ($m in $modes) {
             $folder = Join-Path (Get-Location) ('packaging-metrics/' + $m.name)
-            & dotnet publish './src/uUnityBridge.csproj' -c Release -r win-x64 -o $folder @($m.extra) -p:DebugType=None
+            $dotnetArgs = @('publish','./src/uUnityBridge.csproj','-c','Release','-r','win-x64','-o',$folder) + $m.extra + @('-p:DebugType=None')
+            & dotnet @dotnetArgs
             if ($LASTEXITCODE -ne 0) { throw ('Publish failed: ' + $m.name) }
             $files = @(Get-ChildItem -LiteralPath $folder -File -Recurse)
             $manifest = @($files | ForEach-Object {
