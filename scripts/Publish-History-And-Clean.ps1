@@ -58,6 +58,18 @@ if ($LASTEXITCODE -ne 0 -or $mainSha.Length -ne 40) { throw 'Main commit unavail
 $runList = gh run list -R $repo -w archive-historical-releases.yml -L 20 --json databaseId,status,conclusion,event,headSha
 if ($LASTEXITCODE -ne 0) { throw 'GitHub Actions unavailable.' }
 $runId = Select-HistoricalRunId -Json ($runList -join [Environment]::NewLine) -Head $mainSha
+
+# Query existing releases AND tag refs in bulk. Missing release/tag is a normal
+# state; probing each absent tag with gh release view or gh api returns 404 on
+# stderr and PowerShell 5.1 throws NativeCommandError under Stop preference.
+$releaseListJson = gh release list -R $repo --limit 100 --json tagName
+if ($LASTEXITCODE -ne 0) { throw 'Cannot list GitHub Releases.' }
+$releaseList = @(ConvertFrom-Json -InputObject ($releaseListJson -join [Environment]::NewLine))
+$tagRefsJson = gh api ("repos/" + $repo + "/git/matching-refs/tags/v")
+if ($LASTEXITCODE -ne 0) { throw 'Cannot list GitHub tag references.' }
+$tagRefs = @(ConvertFrom-Json -InputObject ($tagRefsJson -join [Environment]::NewLine))
+Write-Host "Preflight: $($releaseList.Count) releases, $($tagRefs.Count) tags."
+
 $temp = Join-Path $env:TEMP ('uub-history-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $temp | Out-Null
 try {
@@ -88,15 +100,22 @@ try {
        throw "SHA256 mismatch: $tag"
      }
    }
-   $existing = gh release view $tag -R $repo --json tagName 2>$null
-   if ($LASTEXITCODE -eq 0) {
-     $refSha = (gh api ("repos/" + $repo + "/git/ref/tags/" + $tag) --jq '.object.sha').Trim()
-     if ($LASTEXITCODE -ne 0 -or $refSha -ne $sha) { throw "Existing release target mismatch: $tag" }
+   $matchingReleases = @($releaseList | Where-Object { $_.tagName -ceq $tag })
+   $matchingRefs = @($tagRefs | Where-Object { $_.ref -ceq ("refs/tags/" + $tag) })
+   if ($matchingReleases.Count -gt 1 -or $matchingRefs.Count -gt 1) {
+     throw "Ambiguous GitHub release or tag: $tag"
+   }
+   if ($matchingReleases.Count -eq 1) {
+     if ($matchingRefs.Count -ne 1 -or $matchingRefs[0].object.type -ne 'commit' -or
+         $matchingRefs[0].object.sha -ne $sha) {
+       throw "Existing release target mismatch: $tag"
+     }
      Write-Host "PRESERVE $tag"
      continue
    }
-   $refExisting = gh api ("repos/" + $repo + "/git/ref/tags/" + $tag) --jq '.ref' 2>$null
-   if ($LASTEXITCODE -eq 0 -and $refExisting) { throw "Existing tag without release: $tag" }
+   if ($matchingRefs.Count -ne 0) {
+     throw "Existing tag without release: $tag"
+   }
    $notes = @(
       "Исторический выпуск $tag",
       "Исходный коммит: $sha",
