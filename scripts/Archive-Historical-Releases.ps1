@@ -91,12 +91,15 @@ foreach ($entry in $history) {
         "- Это исторический архив, не использовать для автоматического обновления."
     ) | Set-Content -LiteralPath $notes -Encoding UTF8
 
-    git tag -a $tag $sha -m "Historical uUnityBridge $tag"
-    if ($LASTEXITCODE -ne 0) { throw "Tag creation failed $tag" }
-    git push origin ("refs/tags/" + $tag)
-    if ($LASTEXITCODE -ne 0) { throw "Tag push failed $tag" }
-    gh release create $tag $zip -R $env:GITHUB_REPOSITORY --verify-tag --title "uUnityBridge $tag (история)" --notes-file $notes --latest=false
+    # GitHub API creates the lightweight tag pointing at the pinned commit.
+    # Do NOT push Git tags from Actions: workflow-modification permission is
+    # intentionally not granted to the managed GitHub App token.
+    gh release create $tag $zip -R $env:GITHUB_REPOSITORY --target $sha --title "uUnityBridge $tag (история)" --notes-file $notes --latest=false
     if ($LASTEXITCODE -ne 0) { throw "Release creation failed $tag" }
+    $created = (gh api ("repos/" + $env:GITHUB_REPOSITORY + "/git/ref/tags/" + $tag) --jq '.object.sha').Trim()
+    if ($LASTEXITCODE -ne 0 -or $created -ne $sha) {
+        throw "Historical Release tag does not point to expected commit $sha"
+    }
     Write-Host "ARCHIVED $tag -> $sha"
     git worktree remove --force $worktree
     if ($LASTEXITCODE -ne 0) { throw 'Could not clean CI worktree' }
