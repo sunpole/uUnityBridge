@@ -42,7 +42,7 @@ jobs:
           $diagnostic = & ./dist/agent-preview/uUnityBridge.Agent.exe --diagnose | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or
               $diagnostic.isElevated -isnot [bool] -or
-              $diagnostic.version -ne '0.2.1-preview') {
+              $diagnostic.version -ne '0.3.0-preview') {
             throw 'Agent diagnostic output is invalid.'
           }
           Write-Host "PASS: identity diagnostic; elevated=$($diagnostic.isElevated)"
