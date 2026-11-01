@@ -24,7 +24,31 @@ each variant, records file names/sizes/SHA-256, deletes built binaries and
 uploads only JSON measurements. This experiment MUST NOT install or update
 anything on the user's PC.
 
-## Proposed default: self-contained multi-file, version slots
+## Verified packaging benchmark (Windows CI, 2026-11-01)
+
+Results from [workflow run 41275834965](https://github.com/sunpole/uUnityBridge/actions/runs/41275834965):
+
+| Mode | Files | Total payload (bytes) | Main EXE (bytes) | Notes |
+|---|---:|---:|---:|---|
+| self-contained single-file compressed | 1 | 71,643,895 | 71,643,895 | Current v0.4.x mode; whole EXE is replaced |
+| self-contained multi-file | 463 | 167,831,855 | 151,552 | Private .NET runtime included, unchanged DLLs can be reused |
+| framework-dependent multi-file | 4 | 220,558 | 151,552 | Needs compatible **Windows Desktop Runtime** on target machine |
+
+Sizes are uncompressed publish output, not download ZIP size. They include no installer or
+native launcher. They do not establish actual size of subsequent deltas: that requires
+building two versions and comparing each SHA-256. The benchmark runs only on CI,
+not on the user's Windows machine.
+
+**Revised recommendation:** Support both distribution profiles:
+- **Compact**: framework-dependent, 4 files in benchmark, if a compatible Desktop
+  Runtime is installed and verified. Manage runtime as a separately updated
+  prerequisite and do not install without explicit permission.
+- **Portable**: self-contained multi-file, no global runtime dependency, with
+  manifest updates to avoid repeated download of its ~168 MB runtime.
+- The stable launcher + manifest + version slots are shared by both. Do not
+  prefer a single large EXE for high-frequency updates.
+
+## Proposed update engine: signed manifest + version slots
 
 ```text
 uUnityBridge/
