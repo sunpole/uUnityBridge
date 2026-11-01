@@ -45,6 +45,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Agent protocol tests failed' }
           dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --deployment-self-test
           if ($LASTEXITCODE -ne 0) { throw 'Agent deployment tests failed' }
+          dotnet run --project ./tests/uUnityBridge.UpgradeTests/uUnityBridge.UpgradeTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated agent rollback and locked EXE QA failed' }
+          dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --ipc-self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Local current-user IPC QA failed' }
           dotnet publish ./agent/uUnityBridge.Agent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o ./dist/agent
           if ($LASTEXITCODE -ne 0 -or !(Test-Path './dist/agent/uUnityBridge.Agent.exe')) { throw 'Agent publish failed' }
           $agentSha = (Get-FileHash './dist/agent/uUnityBridge.Agent.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
