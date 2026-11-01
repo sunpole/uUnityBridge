@@ -17,6 +17,8 @@ internal static class Program
     {
         if (args is ["--self-test"])
             return await SelfTest.RunAsync();
+        if (args is ["--ipc-self-test"])
+            return await LocalIpcSelfTests.RunAsync();
 
         if (args is ["--deployment-self-test"])
         {
