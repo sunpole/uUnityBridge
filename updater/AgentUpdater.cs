@@ -96,7 +96,6 @@ internal static class AgentUpdater
         // Single use: a retry needs a new explicit GUI confirmation.
         File.Delete(Approval);
 
-        StopExactAgent(target);
         string nextFile = target + ".uub-next";
         if (File.Exists(nextFile))
             throw new InvalidDataException("Previous staging file must be examined.");
@@ -104,6 +103,7 @@ internal static class AgentUpdater
         bool replaced = false;
         try
         {
+            StopExactAgent(target);
             File.Copy(candidate, nextFile, overwrite: false);
             if (Hash(nextFile) != shaArg)
                 throw new InvalidDataException("Copied agent failed SHA256.");
