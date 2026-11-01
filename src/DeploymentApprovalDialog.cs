@@ -47,11 +47,11 @@ internal static class DeploymentApprovalDialog
             return input;
         }
 
-        var id = Input("Имя профиля", 0, "uunity");
-        var repository = Input("Репозиторий GitHub", 1, "sunpole/uUnity");
-        var archive = Input("ZIP-файл Release", 2, "uUnity-windows-x64.zip");
-        var entrypoint = Input("Основной EXE", 3, "uUnity.exe");
-        var workflow = Input("CI workflow (.yml)", 4, "windows-build.yml");
+        var id = Input("Имя профиля", 0, "uunitybridge");
+        var repository = Input("Репозиторий GitHub", 1, "sunpole/uUnityBridge");
+        var archive = Input("ZIP-файл Release", 2, "uUnityBridge-windows-x64.zip");
+        var entrypoint = Input("Основной EXE", 3, "uUnityBridge.exe");
+        var workflow = Input("CI workflow (.yml)", 4, "release-windows.yml");
         fields.Controls.Add(new Label
         {
             Text = "Разрешённая папка", Dock = DockStyle.Fill,
