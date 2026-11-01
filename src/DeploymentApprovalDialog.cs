@@ -135,27 +135,15 @@ internal static class DeploymentApprovalDialog
 
                 if (!enabled)
                 {
-                    // Revoke the selected EXISTING profile without changing
-                    // repository, asset, workflow or previously approved path.
-                    var oldProfiles = LoadProfiles();
-                    var matches = oldProfiles.Where(x =>
-                        x.GetProperty("id").GetString() == profileId).ToArray();
-                    if (matches.Length != 1)
-                        throw new InvalidDataException("Укажите существующий профиль для запрета.");
-                    var original = matches[0];
-                    var remaining = oldProfiles.Where(x =>
-                        x.GetProperty("id").GetString() != profileId).Cast<object>().ToList();
-                    remaining.Add(new
-                    {
-                        id = original.GetProperty("id").GetString(),
-                        repository = original.GetProperty("repository").GetString(),
-                        assetName = original.GetProperty("assetName").GetString(),
-                        entrypoint = original.GetProperty("entrypoint").GetString(),
-                        installRoot = original.GetProperty("installRoot").GetString(),
-                        workflowFile = original.GetProperty("workflowFile").GetString(),
-                        enabled = false
-                    });
-                    PersistProfiles(remaining);
+                    // Only change the permission flag in an existing profile;
+                    // preserve all original data and refuse missing/duplicate IDs.
+                    if (!File.Exists(SettingsFile))
+                        throw new InvalidDataException("Нет сохранённых профилей для отзыва.");
+                    string revoked = DeploymentPermissionData.Revoke(
+                        File.ReadAllText(SettingsFile), profileId);
+                    string next = SettingsFile + ".next";
+                    File.WriteAllText(next, revoked);
+                    File.Move(next, SettingsFile, overwrite: true);
                     MessageBox.Show(dialog, "Разрешение отозвано. Путь и параметры сохранены.",
                         "Готово", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     dialog.Close();
