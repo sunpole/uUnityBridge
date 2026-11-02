@@ -1,384 +1,85 @@
-# Stage QA Desktop and Agent WITHOUT touching the installed uUnityBridge_App.
-# This stages files only. Running QA is a separate, explicit user action.
+# Prepare isolated QA artifacts only. Never replace the production uUnityBridge_App.
+# The generated launcher is run separately and only after the user asks for QA.
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-f]{40}
+    [Parameter(Mandatory=$true)][ValidatePattern('^[0-9a-f]{40}$')][string]$ExpectedCommit,
+    [Parameter(Mandatory=$true)][long]$RunId
 )
 $ErrorActionPreference = 'Stop'
 $repo = 'sunpole/uUnityBridge'
-if ($RunId -gt 0) {
-    if ($DesktopRun -gt 0 -or $AgentRun -gt 0) {
-        throw 'Use either -RunId or both legacy run arguments, not both.'
-    }
-    $DesktopRun = $RunId
-    $AgentRun = $RunId
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw 'GitHub CLI (gh) is missing; production is unchanged.'
 }
-if ($DesktopRun -le 0 -or $AgentRun -le 0 -or $DesktopRun -ne $AgentRun) {
-    throw 'A single successful Windows CI run must contain BOTH matching QA artifacts.'
-}
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI gh is required.' }
-foreach ($id in @($DesktopRun, $AgentRun)) {
-    $raw = & gh run view $id -R $repo --json headSha,conclusion
-    if ($LASTEXITCODE -ne 0) { throw "Unable to validate CI run $id" }
-    $result = $raw | ConvertFrom-Json
-    if ($result.headSha -ne $ExpectedCommit -or $result.conclusion -ne 'success') {
-        throw "CI run $id does not match the expected successful commit."
-    }
+$run = & gh run view $RunId -R $repo --json headSha,conclusion,workflowName
+if ($LASTEXITCODE -ne 0) { throw 'Cannot authenticate and check the expected CI run.' }
+$verified = $run | ConvertFrom-Json
+if ($verified.headSha -ne $ExpectedCommit -or $verified.conclusion -ne 'success' -or
+    $verified.workflowName -ne 'Windows desktop build (uUnityBridge)') {
+    throw 'BLOCKED: CI run must be successful Desktop+Agent workflow at the exact approved SHA.'
 }
 
 $qa = Join-Path $env:LOCALAPPDATA ('uUnityBridge-QA\' + $ExpectedCommit.Substring(0,12))
-if (Test-Path -LiteralPath $qa) { throw "Refusing to overwrite an existing QA directory: $qa" }
+if (Test-Path -LiteralPath $qa) {
+    throw "BLOCKED: QA folder already exists; refusing to overwrite it: $qa"
+}
 $desktop = Join-Path $qa 'Desktop'
 $agent = Join-Path $qa 'Agent'
 [void](New-Item -ItemType Directory -Path $desktop -Force)
 [void](New-Item -ItemType Directory -Path $agent -Force)
-& gh run download $DesktopRun -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
-if ($LASTEXITCODE -ne 0) { throw 'Desktop CI artifact download failed.' }
-& gh run download $AgentRun -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
-if ($LASTEXITCODE -ne 0) { throw 'Agent CI artifact download failed.' }
+& gh run download $RunId -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
+if ($LASTEXITCODE -ne 0) { throw 'QA Desktop artifact not available.' }
+& gh run download $RunId -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
+if ($LASTEXITCODE -ne 0) { throw 'QA Agent artifact not available.' }
 
+function Check-QAHash([string]$exe, [string]$shaFile) {
+    if (-not (Test-Path -LiteralPath $exe -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $shaFile -PathType Leaf)) {
+        throw 'BLOCKED: one or more downloaded executable/hash files are missing.'
+    }
+    $line = (Get-Content -LiteralPath $shaFile -Raw).Trim()
+    $expected = ($line -split '\s+')[0].ToLowerInvariant()
+    $actual = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($expected -notmatch '^[0-9a-f]{64}$' -or $expected -ne $actual) {
+        throw 'BLOCKED: a CI executable did not match its declared SHA-256.'
+    }
+}
 $desktopExe = Join-Path $desktop 'uUnityBridge.exe'
 $agentExe = Join-Path $agent 'uUnityBridge.Agent.exe'
-$shaFile = Join-Path $desktop 'uUnityBridge.exe.sha256'
-$agentShaFile = Join-Path $agent 'uUnityBridge.Agent.exe.sha256'
-foreach ($file in @($desktopExe,$agentExe,$shaFile,$agentShaFile)) {
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing CI artifact: $file" }
-}
-$expectedHash = ((Get-Content -LiteralPath $shaFile -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
-$actualHash = (Get-FileHash -LiteralPath $desktopExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($expectedHash -notmatch '^[0-9a-f]{64}
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
+Check-QAHash $desktopExe (Join-Path $desktop 'uUnityBridge.exe.sha256')
+Check-QAHash $agentExe (Join-Path $agent 'uUnityBridge.Agent.exe.sha256')
 
-$launcher = @'
-$ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
-$env:UUB_UNITY_QA = '1'
-$base = Split-Path -Parent $PSCommandPath
-$qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
-$qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
-$process = $null
-try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
-    $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'The PowerShell window remains occupied until QA Desktop closes (this is normal).'
-    Write-Host 'In GUI: UNITY · ЛОГИ, UNITY · КАДР; never replace working EXEs.'
-    $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
-}
-finally {
-    if ($process -and -not $process.HasExited) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
-}
-'@
-$launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
-Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
-)][string]$ExpectedCommit,
-    [long]$RunId = 0,
-    [long]$DesktopRun = 0,
-    [long]$AgentRun = 0
-)
-$ErrorActionPreference = 'Stop'
-$repo = 'sunpole/uUnityBridge'
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI gh is required.' }
-foreach ($id in @($DesktopRun, $AgentRun)) {
-    $raw = & gh run view $id -R $repo --json headSha,conclusion
-    if ($LASTEXITCODE -ne 0) { throw "Unable to validate CI run $id" }
-    $result = $raw | ConvertFrom-Json
-    if ($result.headSha -ne $ExpectedCommit -or $result.conclusion -ne 'success') {
-        throw "CI run $id does not match the expected successful commit."
-    }
-}
-
-$qa = Join-Path $env:LOCALAPPDATA ('uUnityBridge-QA\' + $ExpectedCommit.Substring(0,12))
-if (Test-Path -LiteralPath $qa) { throw "Refusing to overwrite an existing QA directory: $qa" }
-$desktop = Join-Path $qa 'Desktop'
-$agent = Join-Path $qa 'Agent'
-[void](New-Item -ItemType Directory -Path $desktop -Force)
-[void](New-Item -ItemType Directory -Path $agent -Force)
-& gh run download $DesktopRun -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
-if ($LASTEXITCODE -ne 0) { throw 'Desktop CI artifact download failed.' }
-& gh run download $AgentRun -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
-if ($LASTEXITCODE -ne 0) { throw 'Agent CI artifact download failed.' }
-
-$desktopExe = Join-Path $desktop 'uUnityBridge.exe'
-$agentExe = Join-Path $agent 'uUnityBridge.Agent.exe'
-$shaFile = Join-Path $desktop 'uUnityBridge.exe.sha256'
-foreach ($file in @($desktopExe,$agentExe,$shaFile)) {
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing CI artifact: $file" }
-}
-$expectedHash = ((Get-Content -LiteralPath $shaFile -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
-$actualHash = (Get-FileHash -LiteralPath $desktopExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($expectedHash -notmatch '^[0-9a-f]{64}$' -or $expectedHash -ne $actualHash) {
-    throw 'Downloaded Desktop SHA-256 is not the value produced by CI.'
-}
 & $agentExe --self-test
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
+if ($LASTEXITCODE -ne 0) { throw 'BLOCKED: the staged QA Agent self-test failed.' }
 
 $launcher = @'
 $ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
+$oldQa = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
 $env:UUB_UNITY_QA = '1'
 $base = Split-Path -Parent $PSCommandPath
 $qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
 $qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
 $process = $null
 try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
     $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'In GUI choose UNITY · ПАПКА, then UNITY · СОЗДАТЬ.'
+    if ($process.HasExited) { throw 'BLOCKED: QA Agent exited unexpectedly.' }
+    Write-Host 'PASS: isolated QA started; production EXEs and background agent unchanged.'
+    Write-Host 'PowerShell waits while QA Desktop is open. This is expected.'
+    Write-Host 'Use UNITY LOGS or UNITY FRAME. Only approved Unity window is captured.'
     $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
+    Write-Host ('QA Desktop exited with code ' + $desktop.ExitCode)
 }
 finally {
     if ($process -and -not $process.HasExited) {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
     }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
+    if ($null -eq $oldQa) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
+    else { $env:UUB_UNITY_QA = $oldQa }
 }
 '@
 $launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
 Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
- -or $expectedHash -ne $actualHash) {
-    throw 'Downloaded Desktop SHA-256 is not the value produced by CI.'
-}
-$agentExpectedHash = ((Get-Content -LiteralPath $agentShaFile -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
-$agentActualHash = (Get-FileHash -LiteralPath $agentExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($agentExpectedHash -notmatch '^[0-9a-f]{64}
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
-
-$launcher = @'
-$ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
-$env:UUB_UNITY_QA = '1'
-$base = Split-Path -Parent $PSCommandPath
-$qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
-$qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
-$process = $null
-try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
-    $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'In GUI choose UNITY · ПАПКА, then UNITY · СОЗДАТЬ.'
-    $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
-}
-finally {
-    if ($process -and -not $process.HasExited) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
-}
-'@
-$launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
-Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
-)][string]$ExpectedCommit,
-    [long]$RunId = 0,
-    [long]$DesktopRun = 0,
-    [long]$AgentRun = 0
-)
-$ErrorActionPreference = 'Stop'
-$repo = 'sunpole/uUnityBridge'
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI gh is required.' }
-foreach ($id in @($DesktopRun, $AgentRun)) {
-    $raw = & gh run view $id -R $repo --json headSha,conclusion
-    if ($LASTEXITCODE -ne 0) { throw "Unable to validate CI run $id" }
-    $result = $raw | ConvertFrom-Json
-    if ($result.headSha -ne $ExpectedCommit -or $result.conclusion -ne 'success') {
-        throw "CI run $id does not match the expected successful commit."
-    }
-}
-
-$qa = Join-Path $env:LOCALAPPDATA ('uUnityBridge-QA\' + $ExpectedCommit.Substring(0,12))
-if (Test-Path -LiteralPath $qa) { throw "Refusing to overwrite an existing QA directory: $qa" }
-$desktop = Join-Path $qa 'Desktop'
-$agent = Join-Path $qa 'Agent'
-[void](New-Item -ItemType Directory -Path $desktop -Force)
-[void](New-Item -ItemType Directory -Path $agent -Force)
-& gh run download $DesktopRun -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
-if ($LASTEXITCODE -ne 0) { throw 'Desktop CI artifact download failed.' }
-& gh run download $AgentRun -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
-if ($LASTEXITCODE -ne 0) { throw 'Agent CI artifact download failed.' }
-
-$desktopExe = Join-Path $desktop 'uUnityBridge.exe'
-$agentExe = Join-Path $agent 'uUnityBridge.Agent.exe'
-$shaFile = Join-Path $desktop 'uUnityBridge.exe.sha256'
-foreach ($file in @($desktopExe,$agentExe,$shaFile)) {
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing CI artifact: $file" }
-}
-$expectedHash = ((Get-Content -LiteralPath $shaFile -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
-$actualHash = (Get-FileHash -LiteralPath $desktopExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($expectedHash -notmatch '^[0-9a-f]{64}$' -or $expectedHash -ne $actualHash) {
-    throw 'Downloaded Desktop SHA-256 is not the value produced by CI.'
-}
-& $agentExe --self-test
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
-
-$launcher = @'
-$ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
-$env:UUB_UNITY_QA = '1'
-$base = Split-Path -Parent $PSCommandPath
-$qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
-$qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
-$process = $null
-try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
-    $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'In GUI choose UNITY · ПАПКА, then UNITY · СОЗДАТЬ.'
-    $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
-}
-finally {
-    if ($process -and -not $process.HasExited) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
-}
-'@
-$launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
-Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
- -or $agentExpectedHash -ne $agentActualHash) {
-    throw 'Downloaded QA Agent SHA-256 differs from the verified CI checksum.'
-}
-& $agentExe --self-test
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
-
-$launcher = @'
-$ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
-$env:UUB_UNITY_QA = '1'
-$base = Split-Path -Parent $PSCommandPath
-$qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
-$qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
-$process = $null
-try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
-    $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'In GUI choose UNITY · ПАПКА, then UNITY · СОЗДАТЬ.'
-    $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
-}
-finally {
-    if ($process -and -not $process.HasExited) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
-}
-'@
-$launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
-Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
-)][string]$ExpectedCommit,
-    [long]$RunId = 0,
-    [long]$DesktopRun = 0,
-    [long]$AgentRun = 0
-)
-$ErrorActionPreference = 'Stop'
-$repo = 'sunpole/uUnityBridge'
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'GitHub CLI gh is required.' }
-foreach ($id in @($DesktopRun, $AgentRun)) {
-    $raw = & gh run view $id -R $repo --json headSha,conclusion
-    if ($LASTEXITCODE -ne 0) { throw "Unable to validate CI run $id" }
-    $result = $raw | ConvertFrom-Json
-    if ($result.headSha -ne $ExpectedCommit -or $result.conclusion -ne 'success') {
-        throw "CI run $id does not match the expected successful commit."
-    }
-}
-
-$qa = Join-Path $env:LOCALAPPDATA ('uUnityBridge-QA\' + $ExpectedCommit.Substring(0,12))
-if (Test-Path -LiteralPath $qa) { throw "Refusing to overwrite an existing QA directory: $qa" }
-$desktop = Join-Path $qa 'Desktop'
-$agent = Join-Path $qa 'Agent'
-[void](New-Item -ItemType Directory -Path $desktop -Force)
-[void](New-Item -ItemType Directory -Path $agent -Force)
-& gh run download $DesktopRun -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
-if ($LASTEXITCODE -ne 0) { throw 'Desktop CI artifact download failed.' }
-& gh run download $AgentRun -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
-if ($LASTEXITCODE -ne 0) { throw 'Agent CI artifact download failed.' }
-
-$desktopExe = Join-Path $desktop 'uUnityBridge.exe'
-$agentExe = Join-Path $agent 'uUnityBridge.Agent.exe'
-$shaFile = Join-Path $desktop 'uUnityBridge.exe.sha256'
-foreach ($file in @($desktopExe,$agentExe,$shaFile)) {
-    if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing CI artifact: $file" }
-}
-$expectedHash = ((Get-Content -LiteralPath $shaFile -Raw).Trim() -split '\s+')[0].ToLowerInvariant()
-$actualHash = (Get-FileHash -LiteralPath $desktopExe -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($expectedHash -notmatch '^[0-9a-f]{64}$' -or $expectedHash -ne $actualHash) {
-    throw 'Downloaded Desktop SHA-256 is not the value produced by CI.'
-}
-& $agentExe --self-test
-if ($LASTEXITCODE -ne 0) { throw 'Agent self-test failed. Do not launch this QA.' }
-
-$launcher = @'
-$ErrorActionPreference = 'Stop'
-$oldFlag = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA','Process')
-$env:UUB_UNITY_QA = '1'
-$base = Split-Path -Parent $PSCommandPath
-$qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
-$qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
-$process = $null
-try {
-    # Different agent mutex, Named Pipe and local consent file from stable.
-    $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'QA Agent could not start. The working agent was not modified.' }
-    Write-Host 'UNITY QA MODE: production bridge and startup were not modified.'
-    Write-Host 'In GUI choose UNITY · ПАПКА, then UNITY · СОЗДАТЬ.'
-    $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
-    Write-Host ('QA Desktop exit code: ' + $desktop.ExitCode)
-}
-finally {
-    if ($process -and -not $process.HasExited) {
-        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-    }
-    if ($null -eq $oldFlag) { Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue }
-    else { $env:UUB_UNITY_QA = $oldFlag }
-}
-'@
-$launcherFile = Join-Path $qa 'Run-Unity-QA.ps1'
-Set-Content -LiteralPath $launcherFile -Value $launcher -Encoding UTF8
-Write-Host 'PASS: QA builds staged and Agent tests passed.'
-Write-Host "QA path: $qa"
-Write-Host 'No installed EXEs, startup entries or production settings were changed.'
-Write-Host "To run the isolated QA explicitly: & '$launcherFile'"
+Write-Host 'PASS: matching Desktop/Agent binaries staged; both SHA-256 verified.'
+Write-Host "QA location: $qa"
+Write-Host 'No production EXE, startup entry or production consent was modified.'
+Write-Host "To launch QA only: & '$launcherFile'"
