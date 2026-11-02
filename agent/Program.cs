@@ -351,6 +351,17 @@ internal static class SelfTest
 
     internal static async Task<int> RunAsync()
     {
+        // QA and production never read the same local approval file.
+        string? savedFlag = Environment.GetEnvironmentVariable("UUB_UNITY_QA");
+        Environment.SetEnvironmentVariable("UUB_UNITY_QA", null);
+        string productionApproval = UnityCliPolicy.SettingsFile;
+        Environment.SetEnvironmentVariable("UUB_UNITY_QA", "1");
+        string qaApproval = UnityCliPolicy.SettingsFile;
+        Environment.SetEnvironmentVariable("UUB_UNITY_QA", savedFlag);
+        if (qaApproval.Equals(productionApproval, StringComparison.OrdinalIgnoreCase) ||
+            !qaApproval.EndsWith("unity-approval-qa.json", StringComparison.OrdinalIgnoreCase))
+            throw new Exception("QA and stable Unity approvals are not isolated.");
+
         var fake = new FakeGitHub();
         var cases = new[]
         {
