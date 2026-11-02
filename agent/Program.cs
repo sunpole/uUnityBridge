@@ -279,7 +279,8 @@ internal static class AgentProtocol
                 {
                     status = "ok",
                     actions = new[] { "health", "capabilities", "github_status", "repo_status", "workflow_preview",
-                        "unity_status", "unity_project_create", "unity_project_open" },
+                        "unity_status", "unity_project_create", "unity_project_open",
+                        "unity_diagnostics" },
                     commandExecution = false, unityCliTypedActions = true,
                     unityWriteRequiresLocalApproval = true, remoteNetworkListener = false
                 },
@@ -294,7 +295,8 @@ internal static class AgentProtocol
                     defaultBranch = await github.GetDefaultBranchAsync(ct)
                 },
                 "workflow_preview" => await PreviewAsync(github, ct),
-                "unity_status" or "unity_project_create" or "unity_project_open" =>
+                "unity_status" or "unity_project_create" or "unity_project_open" or
+                "unity_diagnostics" =>
                     await (unity ?? UnityCliBridge.Shared).RunAsync(action.GetString()!, ct),
                 _ => new { status = "error", error = "unknown_action" }
             };
@@ -385,7 +387,8 @@ internal static class SelfTest
         }
 
         var unity = new FakeUnity();
-        foreach (string action in new[] { "unity_status", "unity_project_create", "unity_project_open" })
+        foreach (string action in new[] { "unity_status", "unity_project_create", "unity_project_open",
+            "unity_diagnostics" })
         {
             object answer = await AgentProtocol.RunAsync(
                 JsonSerializer.Serialize(new { action }), fake, CancellationToken.None, unity);
@@ -398,7 +401,7 @@ internal static class SelfTest
             fake, CancellationToken.None, unity);
         using (var parsed = JsonDocument.Parse(JsonSerializer.Serialize(unsafeUnity)))
             if (parsed.RootElement.GetProperty("error").GetString() != "invalid_request" ||
-                unity.Calls.Count != 3)
+                unity.Calls.Count != 4)
                 throw new Exception("Extra Unity path was not denied.");
         Console.WriteLine("PASS: Unity IPC three typed actions and denied extra path.");
 
