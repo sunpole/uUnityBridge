@@ -6,6 +6,21 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## QA-развёртывание без затрагивания рабочей установки — 2026-11-02
+
+**Важно:** реальной установки нового Desktop/Agent на ПК пока НЕ было; PR #25 и #30 остаются Draft, стабильный Release v0.4.2 без изменений.
+
+**Исправление найденного дефекта:** официальный Unity CLI `projects create <имя> --path <папка>` принимает **родительский каталог**, а не полный путь к новому проекту. Это исправлено в `agent/UnityCliBridge.cs` PR #30 и покрыто тестом. Источник: https://github.com/Unity-Technologies/skills/blob/main/skills/unity-cli/SKILL.md.
+
+**Создан изолированный QA-режим PR #30:** агент `--serve-qa` под пользователем Windows использует отдельные Mutex `Local\\uUnityBridge.Agent.qa.v1`, Named Pipe `uUnityBridge.agent.qa.v1` и файл `unity-approval-qa.json`; исходящий GitHub relay отключён. Desktop с переменной окружения `UUB_UNITY_QA=1` отключает GitHub PATCH/ANS, обновлятор и работу с обычной локальной историей. Запущенные Production Desktop/Agent не заменяются. QA-скрипт `scripts/Stage-Unity-QA.ps1` проверяет успешный SHA HEAD двух CI workflow, загружает artifacts в новую папку `%LOCALAPPDATA%\\uUnityBridge-QA\\<12-hex>`, сверяет SHA-256 Desktop и выполняет `Agent --self-test`; отдельный `Run-Unity-QA.ps1` запускается **только по инициативе пользователя** и останавливает QA Agent при закрытии окна. Тестовые EXE не подписаны как стабильный Release; процедура ещё не запускалась на пользовательском ПК.
+
+**Windows CI для точного PR #30 HEAD `481fcfef455e868ae498838bd406a71df3c50749` — 3/3 PASS:**
+- Desktop [#41443979385](https://github.com/sunpole/uUnityBridge/actions/runs/41443979385)
+- Agent [#41443979594](https://github.com/sunpole/uUnityBridge/actions/runs/41443979594)
+- Unity contract [#41443979317](https://github.com/sunpole/uUnityBridge/actions/runs/41443979317)
+
+**Ближайшее действие:** по явному выбору пользователя скачать проверенные CI artifacts в отдельную QA-папку, **не** запускать рабочий Updater для тестового ZIP. Затем открыть QA Desktop + QA Agent, разрешить отдельную родительскую папку, нажать `UNITY · СОЗДАТЬ` и удостовериться, что действительно создан `uUnityDemo` (Unity 6.6 `6000.6.7f1`), открыть его и проверить `unity_status`. Если появится ошибка — сохранить прежнюю программу нетронутой, снять лог/скриншот **только QA окна**. Это ещё НЕ завершено; скриншотер и ChatGPT→Unity GitHub relay пока не готовы.
+
 ## Актуальная контрольная точка — 2026-11-02, Unity Agent → Unity CLI
 
 **Последний факт с ПК:** Unity Hub работает, установлен **Unity Editor 6.6 (6000.6.7f1)**. Unity CLI beta.15 установлен. Пользователь **не подтвердил**, что тестовый `uUnityDemo` создан/открыт. `uUnityBridge_App` и Agent не обновлялись.
