@@ -105,6 +105,16 @@ try
         "No invented error messages when Editor.log has no errors");
     Check(UnityDiagnosticLog.Sanitize(new string('x', 800)).Length <= 181,
         "Single-line diagnostic length limited");
+    string normalizedDemo = profile.Project.Replace('\\', '/');
+    Check(UnityDiagnosticLog.HeaderMatchesApprovedProject(
+        "Unity Editor start -projectPath " + normalizedDemo + "\n", profile.Project),
+        "Editor.log verified for exact approved project");
+    Check(!UnityDiagnosticLog.HeaderMatchesApprovedProject(
+        "Unity Editor start -projectPath " + normalizedDemo + "Backup\n", profile.Project),
+        "Different project with same prefix cannot expose log");
+    Check(!UnityDiagnosticLog.HeaderMatchesApprovedProject(
+        "Unity Editor start -projectPath C:/other/Project\n", profile.Project),
+        "Unrelated Unity Editor logs rejected");
     Console.WriteLine($"PASS: {assertions} isolated Unity CLI policy checks. No Editor launched.");
 }
 finally
