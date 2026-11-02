@@ -90,6 +90,17 @@
     меню и сохранённая сцена. Отправка PNG запрещена до отдельного разрешения:
     <code>LOCAL_ONLY</code>, <code>uploadPermitted=false</code>.</p>
   </section>
+  <section aria-label="Блокировка запуска QA Agent">
+    <h2>QA Agent startup — BLOCKED</h2>
+    <p>2 ноября 2026: staging проверил SHA-256 Desktop и Agent, но локальный
+    <code>Run-Unity-QA.ps1</code> сообщил <code>BLOCKED: QA Agent exited unexpectedly</code>.
+    Desktop не открылся, Unity Editor E2E не проведён. Причина пока неизвестна.
+    <a href="https://github.com/sunpole/uUnityBridge/commit/e40f311e89375e6ddf08cf582c14bed38ae44f93">Draft PR #30</a>
+    содержит безопасную диагностику прав/exit code; новый CI пока выполняется.</p>
+    <p>Рабочая установка не обновляется. Загрузка PNG остаётся выключенной:
+    <code>LOCAL_ONLY</code>, <code>uploadPermitted=false</code>.</p>
+  </section>
+
   <section aria-label="Текущие версии" class="grid">
     <article class="card"><div class="label">Стабильный Desktop</div><strong>v0.4.2</strong><span><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Опубликован в GitHub</a></span></article>
     <article class="card"><div class="label">Агент на ПК — последняя диагностика</div><strong>v0.2.1</strong><span>Связь status проверена; обновление не подтверждено</span></article>
