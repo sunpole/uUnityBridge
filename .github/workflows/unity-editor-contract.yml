@@ -1,6 +1,12 @@
 name: Unity Editor MVP contract (no Unity runtime)
 
 on:
+  push:
+    branches: [feature/unity-mvp-editor-foundation]
+    paths:
+      - 'unity/**'
+      - 'tests/uUnityBridge.UnityContractTests/**'
+      - '.github/workflows/unity-editor-contract.yml'
   pull_request:
     paths:
       - 'unity/**'
