@@ -139,7 +139,7 @@ internal sealed class UnityCliBridge : IUnityBridge
                     lastCompletedUtc = completed == DateTimeOffset.MinValue ?
                         null : completed.ToString("O"),
                     cliErrors = cli,
-                    editorErrors = UnityDiagnosticLog.ReadEditorErrors(),
+                    editorErrors = UnityDiagnosticLog.ReadEditorErrors(approval.Project),
                     privateLocalOnly = true,
                     note = "Best-effort redacted excerpts, not entire Unity Console."
                 };
