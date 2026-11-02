@@ -174,7 +174,7 @@
           "requiresQaEnvironmentFlag": true,
           "qaRequestRoutingFix": "47b7216f4bfa942941c2002252c45e827698c08e",
           "runId": 41502830937,
-          "status": "ci_running_after_expected_exit_code_fix",
+          "status": "ci_pass_hosted_runner_elevated_denial_only_local_qa_blocked",
           "localQaE2ePassed": false,
           "hostedElevatedRunnerMustBlockInsteadOfClaimPass": true,
           "firstCiFailed": {
@@ -187,6 +187,23 @@
             41503208005,
             41503207919,
             41503208078
+          ],
+          "ciResults": [
+            {
+              "runId": 41503208005,
+              "conclusion": "success",
+              "scope": "build_parser_metadata"
+            },
+            {
+              "runId": 41503207919,
+              "conclusion": "success",
+              "scope": "agent_security_gate_elevated_denial_not_nonadmin_qa_runtime"
+            },
+            {
+              "runId": 41503208078,
+              "conclusion": "success",
+              "scope": "unity_contract_no_editor"
+            }
           ]
         }
       },
@@ -355,6 +372,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA named pipe diagnostics exact HEAD 67a7c90 Windows CI 3/3 PASS",
+      "kind": "draft_ci_pass_local_qa_blocked",
+      "result": "CI 41503208005,41503207919,41503208078 success. Windows hosted runner elevated: QA runtime success not proven, only safe denial. User staged Agent --diagnose isElevated=false, but local Run-Unity-QA.ps1 exited early without exit code. Need local QA --serve-qa exit-code probe. No production replacement or upload.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41503207919"
+    },
     {
       "date": "2026-11-02",
       "version": "QA pipe test CI corrected for elevated runner exit code",
