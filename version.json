@@ -98,7 +98,17 @@
           "agent": 41443979594
         },
         "compileAndPolicyCiPassed": true,
-        "realUnityE2ePassed": false
+        "realUnityE2ePassed": false,
+        "lastStagingAttempt": {
+          "date": "2026-11-02",
+          "sha": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
+          "runId": 41485132406,
+          "status": "blocked_existing_qa_folder",
+          "folder": "%LOCALAPPDATA%/uUnityBridge-QA/2ef31bc8fb75",
+          "qaFilesVerified": false,
+          "newQaStarted": false,
+          "next": "read-only inventory and independent Desktop/Agent artifact hash validation; no overwrite"
+        }
       },
       "qaDiagnosticsCapture": {
         "localSourceCode": true,
@@ -181,6 +191,12 @@
       "privateDestinationAccessFromChatGPTVerified": false,
       "userLocalConsentRequired": true,
       "document": "https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/PRIVATE_EVIDENCE_RELAY.md"
+    },
+    "pr25MergeabilityObservation": {
+      "date": "2026-11-02",
+      "sha": "fb840d1bf6bf0de623ec129fb0f70e858b0d78e1",
+      "githubMergeable": false,
+      "recheckBeforeMerge": true
     }
   },
   "goals": [
@@ -259,6 +275,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA staging BLOCKED: existing isolated folder",
+      "kind": "local_qa_blocked",
+      "result": "Stage-Unity-QA.ps1 refused to overwrite QA folder 2ef31bc8fb75. File provenance and new on-device Unity logs, UPM reimport, menu and scene not verified. No upload or production replacement.",
+      "proof": "https://github.com/sunpole/uUnityBridge/blob/2ef31bc8fb75694c77ed0e977bb4ff157a983ff6/scripts/Stage-Unity-QA.ps1"
+    },
     {
       "date": "2026-11-02",
       "version": "CI workflow repair and QA single-run staging plus evidence manifest",
