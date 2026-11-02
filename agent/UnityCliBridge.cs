@@ -80,7 +80,7 @@ internal static class UnityCliPolicy
 
             "unity_project_create" when !exists => new(action, approval.Parent,
                 ["--no-banner", "--non-interactive", "projects", "create",
-                 Name, "--path", approval.Project, "--template", "2d",
+                 Name, "--path", approval.Parent, "--template", "2d",
                  "--editor-version", EditorVersion,
                  "--no-cloud", "--with-pipeline"], true),
 
