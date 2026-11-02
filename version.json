@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "c24db4340e6569258103eba34e49fd3455776e31",
+      "referenceCommit": "0943dd5b23f27ab324becee20c39c3ab85f57636",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -75,7 +75,7 @@
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "referenceCommit": "c24db4340e6569258103eba34e49fd3455776e31",
+      "referenceCommit": "0943dd5b23f27ab324becee20c39c3ab85f57636",
       "windowsCi": {
         "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594",
         "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979385",
@@ -130,13 +130,16 @@
         "realPcScreenshotVerified": true,
         "localScreenshotProof": "User screenshot in ChatGPT on 2026-11-02: Unity window 1936x1056 captured, sha256 prefix 5f000f273225943d",
         "realPcConsoleErrorsVisibleButDiagnosticsMissing": true,
-        "diagnosticPatchDraftHead": "c24db4340e6569258103eba34e49fd3455776e31",
+        "diagnosticPatchDraftHead": "0943dd5b23f27ab324becee20c39c3ab85f57636",
         "diagnosticPatchCiPending": true,
         "metaFilesFixedInDraft": true,
         "metaFixRealUnityVerified": false,
         "largeConsoleDialogFixedInDraft": true,
         "privateDeliveryVerified": false,
-        "realPcEditorConsoleReadVerified": false
+        "realPcEditorConsoleReadVerified": false,
+        "matchedDesktopAgentCiPending": true,
+        "monorepoCiArtifactWorkflow": ".github/workflows/windows-build.yml",
+        "metaCount": 6
       }
     }
   },
