@@ -66,6 +66,20 @@ try
         "missing parent blocked");
     Deny(() => UnityCliPolicy.ValidateParent(Path.GetPathRoot(root)!),
         "drive root blocked");
+    Check(UnityCliBridge.HasVerifiedReadyJson(
+        """{"editors":[{"state":"ready","project":"C:\\test\\uUnityDemo"}]}"""),
+        "JSON exact ready plus expected demo project accepted");
+    Check(!UnityCliBridge.HasVerifiedReadyJson(
+        """{"state":"not_ready","project":"C:\\test\\uUnityDemo"}"""),
+        "nonready state cannot falsely pass");
+    Check(!UnityCliBridge.HasVerifiedReadyJson(
+        """{"ready":false,"project":"C:\\test\\uUnityDemo"}"""),
+        "false readiness cannot falsely pass");
+    Check(!UnityCliBridge.HasVerifiedReadyJson(
+        """{"state":"ready","project":"C:\\other\\Project"}"""),
+        "another project cannot pass the demo status");
+    Check(!UnityCliBridge.HasVerifiedReadyJson("not json"),
+        "unstructured CLI status fails closed");
     Console.WriteLine($"PASS: {assertions} isolated Unity CLI policy checks. No Editor launched.");
 }
 finally
