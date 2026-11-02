@@ -21,6 +21,13 @@ Desktop общается с агентом по `CurrentUserOnly` Named Pipe; а
 настоящего Unity CLI/Editor через агент пока отсутствует. GitHub Issues
 по-прежнему принимают только старую операцию `status`.
 
+**Windows CI на HEAD PR #30: 3/3 PASS** —
+[Agent #41434916126](https://github.com/sunpole/uUnityBridge/actions/runs/41434916126),
+[Desktop #41434916270](https://github.com/sunpole/uUnityBridge/actions/runs/41434916270),
+[Unity policy #41434916382](https://github.com/sunpole/uUnityBridge/actions/runs/41434916382).
+Проверено, что `not_ready` или `ready:false` не дают ложный PASS.
+Это **не** реальное тестирование редактора пользователя.
+
 Документ реализации:
 [docs/UNITY_AGENT_CLI.md](https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/UNITY_AGENT_CLI.md).
 Без подтверждения локального E2E цели не завершены.
