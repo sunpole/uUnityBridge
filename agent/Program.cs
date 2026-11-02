@@ -56,7 +56,8 @@ internal static class Program
         {
             try
             {
-                using var pipe = new NamedPipeClientStream(".", PipeName,
+                using var pipe = new NamedPipeClientStream(".",
+                    QaEnvironment ? QaPipeName : PipeName,
                     PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 await pipe.ConnectAsync(3000, timeout.Token);
