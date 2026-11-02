@@ -33,7 +33,7 @@ try
         create.Arguments.SequenceEqual(new[]
         {
             "--no-banner", "--non-interactive", "projects", "create",
-            "uUnityDemo", "--path", profile.Project, "--template", "2d",
+            "uUnityDemo", "--path", profile.Parent, "--template", "2d",
             "--editor-version", "6000.6.7f1", "--no-cloud", "--with-pipeline"
         }), "project creation uses only approved folder/name/2D/version and no cloud");
     var status = UnityCliPolicy.Build("unity_status", profile);
