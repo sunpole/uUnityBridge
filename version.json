@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "0943dd5b23f27ab324becee20c39c3ab85f57636",
+      "referenceCommit": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -75,7 +75,7 @@
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "referenceCommit": "0943dd5b23f27ab324becee20c39c3ab85f57636",
+      "referenceCommit": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
       "windowsCi": {
         "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594",
         "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979385",
@@ -130,7 +130,7 @@
         "realPcScreenshotVerified": true,
         "localScreenshotProof": "User screenshot in ChatGPT on 2026-11-02: Unity window 1936x1056 captured, sha256 prefix 5f000f273225943d",
         "realPcConsoleErrorsVisibleButDiagnosticsMissing": true,
-        "diagnosticPatchDraftHead": "0943dd5b23f27ab324becee20c39c3ab85f57636",
+        "diagnosticPatchDraftHead": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
         "diagnosticPatchCiPending": true,
         "metaFilesFixedInDraft": true,
         "metaFixRealUnityVerified": false,
@@ -139,8 +139,31 @@
         "realPcEditorConsoleReadVerified": false,
         "matchedDesktopAgentCiPending": true,
         "monorepoCiArtifactWorkflow": ".github/workflows/windows-build.yml",
-        "metaCount": 6
+        "metaCount": 6,
+        "metaFilesInGitVerified": 6,
+        "upmReimportOnPcVerified": false,
+        "editorErrorsRecheckOnPcVerified": false,
+        "localScreenshotVerifiedPreviously": true,
+        "qaSingleRunStagingScript": "scripts/Stage-Unity-QA.ps1",
+        "qaRunIdRequired": true,
+        "requireBothExecutableSha256": true,
+        "latestUnifiedDesktopAgentCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41485132406",
+        "latestUnifiedDesktopAgentCiPass": false,
+        "localManifestImplementedInDraft": true,
+        "localManifestStatus": "LOCAL_ONLY",
+        "uploadPermitted": false,
+        "realPcQAForNewVersionVerified": false
       }
+    },
+    "privateEvidenceRelay": {
+      "status": "draft_local_manifest_no_upload",
+      "manifest": "%LOCALAPPDATA%/uUnityBridge-QA/captures/latest-unity-evidence.json",
+      "imageTransport": "LOCAL_ONLY",
+      "uploadPermitted": false,
+      "privateDestinationConfigured": false,
+      "privateDestinationAccessFromChatGPTVerified": false,
+      "userLocalConsentRequired": true,
+      "document": "https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/PRIVATE_EVIDENCE_RELAY.md"
     }
   },
   "goals": [
@@ -207,7 +230,7 @@
       "status": "qa_local_capture_pass_remote_pending",
       "blocking": true,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "next": "User confirmed local capture of permitted Unity window; next verify private upload via connector and readable screenshot in ChatGPT. QA Editor log blank despite visible warnings is being fixed."
+      "next": "Local Unity window screenshot PASS; draft manifest with uploadPermitted=false; next user approval for protected destination, real delivery and ChatGPT readback; rerun Editor log QA."
     },
     {
       "id": "P0016",
@@ -215,10 +238,17 @@
       "status": "planned",
       "blocking": true,
       "proof": null,
-      "next": "Сквозная проверка с пользователем"
+      "next": "Keep open until private screenshot/log delivered and ChatGPT actually reads image; Unity scene commands E2E still unverified."
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "CI workflow repair and QA single-run staging plus evidence manifest",
+      "kind": "draft_ci_qa_pending",
+      "result": "Restored malformed YAML workflows and CRLF .meta validation; QA script verifies exact single successful CI run and SHA-256 of both EXEs. Local screenshot manifest in Draft is LOCAL_ONLY, uploadPermitted=false. No new Unity Editor on-device E2E.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-02",
       "version": "P0015: first real QA screen capture PASS; Editor diagnostics bug and package .meta patch in Draft",
