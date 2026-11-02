@@ -50,7 +50,7 @@
   <header>
     <div class="eyebrow">uUnityBridge · дорожная карта и история</div>
     <h1>От GitHub-моста<br>к управлению <span class="highlight">Unity</span></h1>
-    <p class="lead">Проверенная история разработки на 1 ноября 2026 года. Здесь отдельно показаны реальные результаты, код в тестовой ветке и то, чего пока нет. Это статический снимок, не мониторинг ПК в реальном времени.</p>
+    <p class="lead">Проверенная история разработки на 2 ноября 2026 года. Здесь отдельно показаны реальные результаты, код в тестовой ветке и то, чего пока нет. Это статический снимок, не мониторинг ПК в реальном времени.</p>
   </header>
 
   <section aria-label="Текущие версии" class="grid">
@@ -71,12 +71,13 @@
       <article class="event"><small>Серия 0.4</small><h3>v0.4.0 → v0.4.2</h3><p>Desktop updater, резервирование и стабильный опубликованный v0.4.2. Последняя пользовательская диагностика: Updater 0.4.0.0.</p><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Открыть Release</a></article>
       <article class="event"><small>01.11.2026 · проверено на ПК</small><h3>Agent 0.2.1 — GitHub status relay <span class="status ok">PASS</span></h3><p>ChatGPT создал Issue, агент получил задание и ответил. Это не удалённая установка, запуск Unity или скриншот.</p><a href="https://github.com/sunpole/uUnityBridge/issues/29">Проверка R000005</a></article>
       <article class="event"><small>01.11.2026 · только Draft PR</small><h3>Desktop 0.4.3 + Agent 0.3.0 preview <span class="status pending">QA ожидается</span></h3><p>Проверки файлов, ZIP, SHA-256, изолированного rollback и Windows Named Pipe прошли CI. Реальная приёмка на обычном Windows-пользователе и публикация не выполнены.</p><a href="https://github.com/sunpole/uUnityBridge/pull/25">PR #25</a></article>
-      <article class="event"><small>01.11.2026 · Draft PR #30</small><h3>Unity Editor MVP 0.1.0 <span class="status pending">CI PASS, Unity QA нет</span></h3><p>Есть меню Tools → uUnityBridge и четыре ограниченные команды для создания и сохранения тестовой сцены. Unity Editor у пользователя ещё не установлен; настоящую сцену никто не проверял.</p><a href="https://github.com/sunpole/uUnityBridge/pull/30">PR #30 и контрактные тесты</a></article>
+      <article class="event"><small>01.11.2026 · Draft PR #30</small><h3>Unity Editor MVP 0.1.0 <span class="status pending">CI PASS, Unity QA нет</span></h3><p>Есть меню Tools → uUnityBridge и четыре ограниченные команды для создания и сохранения тестовой сцены. Unity Editor 6.6 установлен, но тестовый проект и выполнение новых команд через Agent не подтверждены.</p><a href="https://github.com/sunpole/uUnityBridge/pull/30">PR #30 и контрактные тесты</a></article>
     </div>
   </section>
 
   <section>
     <h2>Открытые цели и долги</h2>
+    <p class="lead">Новый этап PR #30: добавлены кнопки Unity, локальное разрешение папки и типизированный Agent → Unity CLI. Это исходники и CI, не установленная функция. <a href="https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/UNITY_AGENT_CLI.md">Описание связи</a>.</p>
     <div class="list">
       <div class="item"><div><strong>P0009 · Двусторонний status</strong><p>Единственное доказанное действие установленного Agent 0.2.1</p></div><span class="status ok">Готово для status</span></div>
       <div class="item"><div><strong>P0010 · Доставка Release</strong><p>Изолированные CI PASS, настоящая установка и rollback под обычным Windows-пользователем ещё не проверены</p></div><span class="status pending">Нужен E2E</span></div>
