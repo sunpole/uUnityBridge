@@ -7,6 +7,14 @@
 
 
 
+
+## 2026-11-02 — QA readiness evidence: isElevated=false; isolate QA handshake
+
+- **PASS (только диагностика прав):** пользователь выполнил `--diagnose` на old staged QA Agent 0.2.1-preview, результат `isElevated=false`. Это не подтверждает здоровье Named Pipe и не объясняет старое завершение `--serve-qa`.
+- **BLOCKED:** `Run-Unity-QA.ps1` выдал `QA Agent exited unexpectedly`; код завершения прежний launcher не показывает, Desktop/Unity ещё не проверены.
+- **Draft PR #30 `0dd2f04fbd93f44157a5167a84d6dee782ae904f`:** явный QA `--request` направляется в QA Named Pipe; CI добавляет runtime QA service/health/denied-command gate при standard user. На elevated hosted runner доказывается только запрет, а не runtime PASS.
+- **Следующий локальный шаг:** безопасное повторение в новом временном QA процессе `--serve-qa` с замером exit code и гарантированным прекращением **только** созданного тестового процесса; проверить GitHub CI для нового HEAD. Не менять production.
+- **Дальше:** UNITY · ЛОГИ (реальное подтверждение / честный BLOCKED), pinned UPM с 6 .meta без предупреждений, Tools → uUnityBridge/3 платформы/save/reopen, затем разрешённая приватная PNG+report доставка и отдельный PR #25 rollback QA.
 ## 2026-11-02 — новый обязательный QA-gate: Agent startup BLOCKED
 
 - **Доказательство:** пользователь запустил `Run-Unity-QA.ps1` в изолированной QA-папке SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e` / RunId `41493135234` и получил `BLOCKED: QA Agent exited unexpectedly`. STAGING PASS ≠ QA Agent START PASS. Не объявлять реальный Unity E2E.
