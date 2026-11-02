@@ -3,6 +3,11 @@
 **Снимок проверен:** 2 ноября 2026 года. Это **история разработки**, а не онлайн-датчик компьютера. Актуальные публикации, PR и результаты тестов проверяются по ссылкам.
 [Машинная история](version.json) · [Наглядная HTML-страница](version.html) · [План и критерии](docs/GOALS_AND_ACCEPTANCE.md) · [Правила проекта](AGENTS.md).
 
+
+## 2026-11-02 — исправление Stage QA в Draft PR, CI ещё выполняется
+
+В [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) исправлен сценарий `Stage-Unity-QA.ps1`: при проверенном `ExpectedCommit` и успешном `RunId` **каждая попытка теперь использует отдельную уникальную тестовую папку** (`SHA12-RunId-GUID`); старый слот `2ef31bc8fb75` не удаляется и не перезаписывается. Защита от junction/symlink корневого QA-каталога и проверка SHA-256 Desktop/Agent сохранены. В `windows-build.yml` добавлена проверка синтаксиса PowerShell 5.1 и статических правил против перезаписи/удаления. Коммиты: [dfb4d6b](https://github.com/sunpole/uUnityBridge/commit/dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2) → [c730ad2](https://github.com/sunpole/uUnityBridge/commit/c730ad247e6214ce80272ba4133a6d13e994580e). Windows CI на этом HEAD запущены: [Desktop+Agent #41492786845](https://github.com/sunpole/uUnityBridge/actions/runs/41492786845), [Agent #41492786977](https://github.com/sunpole/uUnityBridge/actions/runs/41492786977), [Unity contract #41492786941](https://github.com/sunpole/uUnityBridge/actions/runs/41492786941). **На момент записи CI ещё выполняется, локальная QA НЕ пройдена**. Не объявлять реализацию PASS до результатов CI и проверки на ПК. `uUnityBridge_App` не затронута.
+
 ## 2 ноября 2026 — QA заблокирован существующим каталогом
 
 На контрольном SHA `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6`, CI RunId `41485132406` пользователь получил `BLOCKED: QA folder already exists` для `%LOCALAPPDATA%\uUnityBridge-QA\2ef31bc8fb75`. Защита от перезаписи сработала, но новая QA-сборка **не подтверждена**; источник имеющихся файлов неизвестен. Следующий gate: read-only инвентаризация плюс независимые SHA256 Desktop/Agent с артефактами успешного CI; потом локальный QA логов, UPM reimport и сцены. PR #25 остаётся Draft, `mergeable=false` при проверке; приватная передача PNG отключена. См. [CONTINUE_HERE.md](CONTINUE_HERE.md).
