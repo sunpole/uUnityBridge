@@ -9,6 +9,10 @@
 
 
 
+
+## 2026-11-02 — проверка QA Pipe patch 3/3 CI, E2E Gate остаётся
+
+**CI PASS на `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47`:** Desktop #41503208005, Agent #41503207919, Unity #41503208078. Agent CI на elevated GitHub runner подтверждает отказ от привилегированного QA serve; не подтверждает запуска standard-user QA server. **Локальная диагностика прав PASS (`isElevated=false`), QA Agent START BLOCKED**, exit code пока не записан. Следующий критерий: короткий standalone `--serve-qa` probe в QA environment и получение exit code либо живого процесса с завершением только test PID. Далее QA GUI → UNITY · ЛОГИ → UPM 6 .meta → scene 3 platforms/save/reopen → приватный relay с разрешением; отдельно PR25 delivery/rollback.
 ## 2026-11-02 — уточнение gate для локального QA Agent
 
 **Факт ПК:** `--diagnose` возвратил `isElevated=false`, но старый `--serve-qa` ранее мгновенно завершился без кода выхода. Локальный BLOCKED остаётся.
