@@ -11,6 +11,8 @@ namespace uUnityBridge.Agent;
 internal static class Program
 {
     private const string PipeName = "uUnityBridge.agent.v1";
+    private const string QaPipeName = "uUnityBridge.agent.qa.v1";
+    private static bool QaEnvironment => Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1";
     private const int MaxRequestCharacters = 4096;
 
     private static async Task<int> Main(string[] args)
@@ -84,9 +86,15 @@ internal static class Program
             }
         }
 
-        if (args is not [] and not ["--serve"])
+        bool qaServe = args is ["--serve-qa"];
+        if (qaServe && !QaEnvironment)
         {
-            Console.Error.WriteLine("Use --serve, --relay-once, --request <action>, --diagnose, or --self-test.");
+            Console.Error.WriteLine("BLOCKED: isolated QA requires the explicit QA environment flag.");
+            return 2;
+        }
+        if (args is not [] and not ["--serve"] and not ["--serve-qa"])
+        {
+            Console.Error.WriteLine("Use --serve, --serve-qa, --relay-once, --request <action>, --diagnose, or --self-test.");
             return 2;
         }
 
@@ -102,7 +110,12 @@ internal static class Program
             }
         }
 
-        using var mutex = new Mutex(true, @"Local\uUnityBridge.Agent.v1", out bool ownsMutex);
+        // Preview QA uses a distinct mutex and Named Pipe: never competes with
+        // the user's installed background agent.
+        string mutexName = qaServe ? @"Local\uUnityBridge.Agent.qa.v1" :
+            @"Local\uUnityBridge.Agent.v1";
+        string serverPipe = qaServe ? QaPipeName : PipeName;
+        using var mutex = new Mutex(true, mutexName, out bool ownsMutex);
         if (!ownsMutex)
         {
             Console.Error.WriteLine("Agent already running in this Windows session.");
@@ -115,11 +128,14 @@ internal static class Program
         using var stop = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
         IGitHubReader github = new GitHubReader();
-        Task relayLoop = GitHubRelay.PollAsync(github, stop.Token);
+        // QA preview does NOT poll or mutate GitHub Issues, release state,
+        // patch history or the installed agent's service.
+        Task relayLoop = qaServe ? Task.CompletedTask :
+            GitHubRelay.PollAsync(github, stop.Token);
 
         while (!stop.IsCancellationRequested)
         {
-            using var server = new NamedPipeServerStream(PipeName,
+            using var server = new NamedPipeServerStream(serverPipe,
                 PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
                 PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
             try { await server.WaitForConnectionAsync(stop.Token); }
