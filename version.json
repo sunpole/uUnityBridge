@@ -108,6 +108,20 @@
           "qaFilesVerified": false,
           "newQaStarted": false,
           "next": "read-only inventory and independent Desktop/Agent artifact hash validation; no overwrite"
+        },
+        "stageCollisionFix": {
+          "date": "2026-11-02",
+          "headSha": "c730ad247e6214ce80272ba4133a6d13e994580e",
+          "commit": "dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2",
+          "status": "implemented_ci_in_progress_local_qa_pending",
+          "slotStrategy": "sha12-runId-randomGuid",
+          "preservesOldQaFolder": true,
+          "script": "scripts/Stage-Unity-QA.ps1",
+          "ciRuns": [
+            41492786845,
+            41492786977,
+            41492786941
+          ]
         }
       },
       "qaDiagnosticsCapture": {
@@ -275,6 +289,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA immutable unique slot staging in Draft PR #30",
+      "kind": "draft_ci_running_qa_pending",
+      "result": "QA stage collision fix: new SHA12-RunId-GUID slot per run, no overwrite of old QA folder, Windows PowerShell parser safety CI added. CI in progress for exact SHA c730ad247e6214ce80272ba4133a6d13e994580e; local Unity logs/UPM/menu/scene still unverified. No production changes.",
+      "proof": "https://github.com/sunpole/uUnityBridge/commit/c730ad247e6214ce80272ba4133a6d13e994580e"
+    },
     {
       "date": "2026-11-02",
       "version": "QA staging BLOCKED: existing isolated folder",
