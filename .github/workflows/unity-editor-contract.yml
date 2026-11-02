@@ -40,6 +40,43 @@ jobs:
           }
           if ($commands -match 'Process[.]Start|System[.]Diagnostics[.]Process|HttpClient|WebRequest') { throw 'Unexpected process or network API in Unity adapter' }
           Write-Host 'PASS: package manifest and Editor-only typed command contract'
+      - name: Validate .meta for every asset and folder in immutable Unity package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = (Resolve-Path './unity/Packages/com.sunpole.uunitybridge').Path
+          $files = @(Get-ChildItem -LiteralPath $root -Recurse -Force -File)
+          $assets = @($files | Where-Object { $_.Extension -ne '.meta' })
+          $directories = @(Get-ChildItem -LiteralPath $root -Recurse -Force -Directory)
+          $guids = @{}
+          foreach ($item in @($assets) + @($directories)) {
+            $meta = $item.FullName + '.meta'
+            if (!(Test-Path -LiteralPath $meta -PathType Leaf)) {
+              throw "Missing Unity .meta in immutable package: $($item.FullName)"
+            }
+            $content = Get-Content -LiteralPath $meta -Raw
+            $match = [regex]::Match($content, '(?m)^guid: ([0-9a-f]{32})
+        shell: pwsh
+        run: |
+          dotnet run --project ./tests/uUnityBridge.UnityContractTests/uUnityBridge.UnityContractTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Unity command contract checks failed' }
+          Write-Host 'PASS: static policy only; real Unity Editor E2E still required'
+)
+            if (!$match.Success) { throw "Invalid Unity meta GUID: $meta" }
+            $guid = $match.Groups[1].Value
+            if ($guids.ContainsKey($guid)) { throw "Duplicate Unity meta GUID: $guid" }
+            $guids[$guid] = $meta
+          }
+          foreach ($meta in @($files | Where-Object { $_.Extension -eq '.meta' })) {
+            $source = $meta.FullName.Substring(0,$meta.FullName.Length-5)
+            if (!(Test-Path -LiteralPath $source)) {
+              throw "Orphan Unity .meta file: $($meta.FullName)"
+            }
+          }
+          if ($assets.Count -lt 5 -or $guids.Count -lt 6) {
+            throw 'Incomplete Unity package metadata'
+          }
+          Write-Host "PASS: Unity assets $($assets.Count), folders $($directories.Count), unique GUID $($guids.Count)"
       - name: Verify action allowlist and platform bounds without Unity install
         shell: pwsh
         run: |
