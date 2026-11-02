@@ -75,11 +75,13 @@ internal static class UnityCliPolicy
         return action switch
         {
             "unity_status" => new(action, approval.Parent,
-                ["--no-banner", "--format", "json", "status"], false),
+                ["--no-banner", "--format", "json", "status",
+                 "--project-path", approval.Project], false),
 
             "unity_project_create" when !exists => new(action, approval.Parent,
                 ["--no-banner", "--non-interactive", "projects", "create",
-                 Name, "--template", "2d", "--editor-version", EditorVersion,
+                 Name, "--path", approval.Project, "--template", "2d",
+                 "--editor-version", EditorVersion,
                  "--no-cloud", "--with-pipeline"], true),
 
             "unity_project_open" when projectValid => new(action, approval.Parent,
