@@ -74,25 +74,28 @@ internal sealed class MainForm : Form
         grid.Controls.Add(header, 0, 0);
         // Unity controls are local typed IPC only. This UI does not launch PowerShell,
         // parse command text or authorize a folder on behalf of GitHub.
-        var buttons = new TableLayoutPanel { ColumnCount = 5, Dock = DockStyle.Fill };
-        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-        for (int i = 0; i < 4; i++)
-            buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.25f));
+        var buttons = new TableLayoutPanel { ColumnCount = 6, Dock = DockStyle.Fill };
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+        for (int i = 0; i < 5; i++)
+            buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 14));
         buttons.Controls.Add(copy, 0, 0);
         var unitySettings = BigButton("UNITY · ПАПКА", Color.FromArgb(50, 83, 112));
         var unityStatus = BigButton("UNITY · СТАТУС", Color.FromArgb(42, 92, 115));
         var unityCreate = BigButton("UNITY · СОЗДАТЬ", Color.FromArgb(42, 92, 115));
         var unityOpen = BigButton("UNITY · ОТКРЫТЬ", Color.FromArgb(42, 92, 115));
-        foreach (var button in new[] { unitySettings, unityStatus, unityCreate, unityOpen })
+        var unityLogs = BigButton("UNITY · ЛОГИ", Color.FromArgb(98, 71, 114));
+        foreach (var button in new[] { unitySettings, unityStatus, unityCreate, unityOpen, unityLogs })
             button.Font = new Font("Segoe UI Semibold", 9, FontStyle.Bold);
         buttons.Controls.Add(unitySettings, 1, 0);
         buttons.Controls.Add(unityStatus, 2, 0);
         buttons.Controls.Add(unityCreate, 3, 0);
         buttons.Controls.Add(unityOpen, 4, 0);
+        buttons.Controls.Add(unityLogs, 5, 0);
         unitySettings.Click += (_, _) => UnityConsentDialog.Show(this);
         unityStatus.Click += async (_, _) => await RunUnityAsync("unity_status");
         unityCreate.Click += async (_, _) => await RunUnityAsync("unity_project_create");
         unityOpen.Click += async (_, _) => await RunUnityAsync("unity_project_open");
+        unityLogs.Click += async (_, _) => await RunUnityAsync("unity_diagnostics");
         grid.Controls.Add(buttons, 0, 1);
         var split = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1 };
         split.Panel1.Controls.Add(patches);
