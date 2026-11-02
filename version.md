@@ -9,6 +9,11 @@
 
 
 
+
+## 2 ноября 2026 — QA Pipe diagnostic patch: CI 3/3 PASS, локальный запуск BLOCKED
+
+PR #30 `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47`: [Desktop+Agent #41503208005](https://github.com/sunpole/uUnityBridge/actions/runs/41503208005), [Agent #41503207919](https://github.com/sunpole/uUnityBridge/actions/runs/41503207919), [Unity contract #41503208078](https://github.com/sunpole/uUnityBridge/actions/runs/41503208078) все **SUCCESS**. Agent CI on hosted elevated runner проверил только корректный безопасный отказ, **не успешный старт QA server**. Пользовательский `--diagnose` дал `isElevated=false`, однако реальный `--serve-qa` ранее завершался с UNKNOWN exit code; Unity E2E / .meta/ сцена ещё не проверены. Следующий шаг — получить локальный QA server exit code без установки новой сборки. Публикация приватного PNG запрещена.
+
 ## 2026-11-02 — QA runtime CI и код выхода PowerShell
 
 Для Draft PR #30 добавлены отдельный QA Pipe для диагностического клиента и Windows CI тест `--serve-qa`. Первое [Agent CI #41502830937](https://github.com/sunpole/uUnityBridge/actions/runs/41502830937) упало из-за остаточного ожидаемого кода exit 5 у GitHub pwsh wrapper, не из-за обхода запрета; исправлено в `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47` с сохранением обязательного security gate. На новом SHA CI ещё требуется проверить. Локальный пользовательский `--diagnose`: `isElevated=false`, реальный сервер QA по-прежнему не запущен; до Unity, .meta, сцены и приватного PNG не дошли.
