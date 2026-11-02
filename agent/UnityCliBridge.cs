@@ -131,15 +131,18 @@ internal sealed class UnityCliBridge : IUnityBridge
                     cli = lastCliErrors.ToArray();
                     completed = lastFinishedUtc;
                 }
+                var editor = UnityDiagnosticLog.ReadEditorErrors(approval.Project);
                 return new
                 {
-                    status = "PASS", action,
-                    lastOperation = previous,
+                    status = editor.Status.StartsWith("VERIFIED_", StringComparison.Ordinal) ?
+                        "PASS" : "PARTIAL",
+                    action, lastOperation = previous,
                     lastOperationStatus = outcome,
                     lastCompletedUtc = completed == DateTimeOffset.MinValue ?
                         null : completed.ToString("O"),
                     cliErrors = cli,
-                    editorErrors = UnityDiagnosticLog.ReadEditorErrors(approval.Project),
+                    editorLogStatus = editor.Status,
+                    editorErrors = editor.Lines,
                     privateLocalOnly = true,
                     note = "Best-effort redacted excerpts, not entire Unity Console."
                 };
