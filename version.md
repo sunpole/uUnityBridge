@@ -5,6 +5,11 @@
 
 
 
+
+## 2 ноября 2026 — первый LOCAL QA STAGING PASS на SHA 4ed8ca7
+
+Пользователь подтвердил запуск Stage-Unity-QA.ps1 на SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e` и CI RunId `41493135234`. Скрипт выдал PASS по проверке SHA-256 **обоих** QA EXE и Agent self-test; новая изолированная папка `4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35` создана, рабочая установка не заменялась. Затем пользователь ввёл текст `To launch QA only` вместо исполняемой команды, PowerShell ответил `To : Имя "To" не распознано`: это **не** ошибка Unity. QA Desktop, UNITY · ЛОГИ, 6 .meta reimport, сцена с 3 платформами и приватная доставка PNG пока остаются **NOT VERIFIED**. Следующий шаг — выполнить точную строку `& "...\Run-Unity-QA.ps1"` из Stage report, затем проверить логи и Unity. В будущей версии изменить формулировку подсказки запуска, чтобы её не принимали за команду.
+
 ## 2026-11-02 — QA staging patch: CI 3/3 PASS, приёмка ПК остаётся
 
 [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) HEAD `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`: исправлено создание уникального QA-слота на каждый успешный RunId/SHA без overwrite старого `2ef31bc8fb75`. Первое выполнение добавленного CI guard на `c730ad247e6214ce80272ba4133a6d13e994580e` упало из-за ложного regex-совпадения `Move-Item` внутри `Remove-Item`; guard исправлен коммитом `4ed8ca7`.
