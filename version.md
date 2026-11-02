@@ -8,6 +8,11 @@
 
 
 
+
+## 2026-11-02 — QA runtime CI и код выхода PowerShell
+
+Для Draft PR #30 добавлены отдельный QA Pipe для диагностического клиента и Windows CI тест `--serve-qa`. Первое [Agent CI #41502830937](https://github.com/sunpole/uUnityBridge/actions/runs/41502830937) упало из-за остаточного ожидаемого кода exit 5 у GitHub pwsh wrapper, не из-за обхода запрета; исправлено в `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47` с сохранением обязательного security gate. На новом SHA CI ещё требуется проверить. Локальный пользовательский `--diagnose`: `isElevated=false`, реальный сервер QA по-прежнему не запущен; до Unity, .meta, сцены и приватного PNG не дошли.
+
 ## 2026-11-02 — Agent --diagnose: isElevated=false; qa startup still BLOCKED
 
 Реальный QA Agent 0.2.1-preview из изолированного слота ответил `isElevated=false`; elevated права в этом диагностическом контексте исключены, но `--serve-qa` по-прежнему **не подтверждён**. В Draft PR #30 `0dd2f04fbd93f44157a5167a84d6dee782ae904f` исправлена QA маршрутизация `--request` к отдельному Named Pipe и добавлен QA runtime smoke test с честным пропуском реального E2E на elevated CI runner. Новый CI требуется проверить. Следующее действие — получить **код завершения** отдельного временного QA сервера на старом слоте и не трогать production. Unity UI/логи, .meta reimport, сцена, приватная PNG доставка остаются открыты.
