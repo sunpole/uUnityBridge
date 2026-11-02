@@ -5,6 +5,17 @@
 
 
 
+
+## 2026-11-02 — закрыта блокировка подготовки QA (только staging)
+
+**Локальный результат пользователя:** сценарий на SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`, Windows run `41493135234` проверил SHA-256 Desktop/Agent и Agent self-test, создал новый QA-слот `4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35`. Состояние **LOCAL_QA_STAGING_PASS**, не `UNITY_E2E_PASS`. Ошибка `To launch QA only` связана с вводом текста-подсказки вместо команды. В текущем run отсутствует доказательство запуска QA Desktop. Старая QA-папка и production не перезаписывались этим staging.
+
+- **Gate QA Desktop:** фактический запуск `Run-Unity-QA.ps1` и проверка `UNITY · ЛОГИ` на `uUnityDemo` или честный `BLOCKED`.
+- **Gate UPM:** установить/переимпортировать только в тестовом Unity-проекте package Git revision `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`, подтвердить шесть .meta и отсутствие новых предупреждений в Console/Editor.log.
+- **Gate scene:** `Tools → uUnityBridge → 2. Создать тестовую сцену`, подтвердить 3 платформы, save и reopen; не изменять другие сцены.
+- **Gate private evidence:** локальные PNG+sanitized JSON можно тестировать без отправки; cloud upload выключен до согласия, ограниченного доступа и подтверждённого чтения ChatGPT.
+- **Gate PR #25:** VM/локальный E2E обновления/отката и проверка mergeability; прежняя установка `uUnityBridge_App` не затрагивается.
+
 ## 2026-11-02 — QA staging patch: CI 3/3 PASS, приёмка ПК остаётся
 
 [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) HEAD `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`: исправлено создание уникального QA-слота на каждый успешный RunId/SHA без overwrite старого `2ef31bc8fb75`. Первое выполнение добавленного CI guard на `c730ad247e6214ce80272ba4133a6d13e994580e` упало из-за ложного regex-совпадения `Move-Item` внутри `Remove-Item`; guard исправлен коммитом `4ed8ca7`.
