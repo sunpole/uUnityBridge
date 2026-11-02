@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "3c5519711ba37b92f5dee7682261055ec8192db4",
+      "referenceCommit": "481fcfef455e868ae498838bd406a71df3c50749",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -75,13 +75,31 @@
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "referenceCommit": "3c5519711ba37b92f5dee7682261055ec8192db4",
+      "referenceCommit": "481fcfef455e868ae498838bd406a71df3c50749",
       "windowsCi": {
-        "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916126",
-        "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916270",
-        "unityPolicy": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916382"
+        "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594",
+        "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979385",
+        "unityPolicy": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979317"
       },
-      "ciPassed": true
+      "ciPassed": true,
+      "qaMode": {
+        "implementedInDraft": true,
+        "installedOnUserPc": false,
+        "startedOnUserPc": false,
+        "productionAgentUntouched": true,
+        "productionDesktopUntouched": true,
+        "distinctPipe": "uUnityBridge.agent.qa.v1",
+        "distinctConsentFile": "unity-approval-qa.json",
+        "noGithubPolling": true,
+        "desktopPatchUpdaterDisabled": true,
+        "stageScript": "scripts/Stage-Unity-QA.ps1",
+        "artifactRuns": {
+          "desktop": 41443979385,
+          "agent": 41443979594
+        },
+        "compileAndPolicyCiPassed": true,
+        "realUnityE2ePassed": false
+      }
     }
   },
   "goals": [
@@ -137,10 +155,10 @@
     {
       "id": "P0014",
       "name": "Типизированный запуск разрешённого Unity и тестирование",
-      "status": "in_development",
+      "status": "ci_pass_qa_pending",
       "blocking": true,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "next": "Три Unity CLI действия и UI реализованы в Draft; нет реального локального Unity/Agent E2E и удалённого GitHub relay."
+      "next": "Download exact CI artifacts into QA directory and test GUI create/open via separate QA pipe on user Windows; installed production remains unchanged."
     },
     {
       "id": "P0015",
@@ -160,6 +178,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "Unity QA isolated staging (Draft PR #30)",
+      "kind": "draft_ci",
+      "result": "QA preview Desktop + Agent use a separate IPC pipe, isolated local consent and no production GitHub polling or updater. 3/3 Windows CI PASS. No local QA launch or real Unity E2E has yet occurred.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594"
+    },
     {
       "date": "2026-11-02",
       "version": "Unity CLI local IPC/GUI prototype (Draft PR #30)",
