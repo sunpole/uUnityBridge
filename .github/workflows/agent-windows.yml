@@ -144,6 +144,63 @@ jobs:
           finally {
             if (-not $agent.HasExited) { Stop-Process -Id $agent.Id -Force }
           }
+      - name: Runtime isolated QA Agent and QA Named Pipe E2E (no production mutation)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = (Resolve-Path ./dist/agent-preview/uUnityBridge.Agent.exe).Path
+          $saved = [Environment]::GetEnvironmentVariable('UUB_UNITY_QA', 'Process')
+          $qa = $null
+          try {
+            Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue
+            & $exe --serve-qa 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 2) {
+              throw 'QA service started without explicit QA flag'
+            }
+            $env:UUB_UNITY_QA = '1'
+            $identity = & $exe --diagnose | ConvertFrom-Json
+            if ($identity.isElevated) {
+              & $exe --serve-qa 2>$null | Out-Null
+              if ($LASTEXITCODE -ne 5) {
+                throw 'Elevated QA service bypassed explicit privilege restriction'
+              }
+              Write-Host 'PASS: hosted runner is elevated, QA safely blocked (local E2E still required)'
+            }
+            else {
+              $qa = Start-Process -FilePath $exe -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
+              $response = $null
+              for ($attempt = 0; $attempt -lt 12; $attempt++) {
+                Start-Sleep -Milliseconds 500
+                if ($qa.HasExited) {
+                  throw "QA Agent exited before health handshake, exit code $($qa.ExitCode)"
+                }
+                $raw = & $exe --request health 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                  $response = $raw | ConvertFrom-Json
+                  break
+                }
+              }
+              if ($null -eq $response -or $response.status -ne 'ok' -or
+                  $response.adminToolsEnabled -ne $false -or
+                  $response.transport -ne 'current-user-named-pipe') {
+                throw 'QA Named Pipe health handshake failed'
+              }
+              $denied = & $exe --request powershell | ConvertFrom-Json
+              if ($LASTEXITCODE -ne 0 -or $denied.error -ne 'unknown_action') {
+                throw 'QA IPC accepted an unapproved command'
+              }
+              Write-Host 'PASS: QA --serve-qa + isolated QA Named Pipe health + denied command'
+            }
+          }
+          finally {
+            if ($qa -and -not $qa.HasExited) {
+              Stop-Process -Id $qa.Id -Force -ErrorAction SilentlyContinue
+            }
+            if ($null -eq $saved) {
+              Remove-Item Env:UUB_UNITY_QA -ErrorAction SilentlyContinue
+            }
+            else { $env:UUB_UNITY_QA = $saved }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-agent-p0008-preview
