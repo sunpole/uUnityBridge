@@ -9,7 +9,7 @@ internal static class UnityLocalClient
     // Calls only the current-user named pipe, not HTTP or a shell.
     internal static async Task<string> RequestAsync(string action)
     {
-        if (action is not ("unity_status" or "unity_project_create" or "unity_project_open"))
+        if (action is not ("unity_status" or "unity_project_create" or "unity_project_open" or "unity_diagnostics"))
             throw new InvalidDataException("Команда не разрешена.");
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
         string pipeName = Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1" ?
@@ -23,11 +23,28 @@ internal static class UnityLocalClient
         await writer.WriteLineAsync(JsonSerializer.Serialize(new { action }));
         var text = await reader.ReadLineAsync(timeout.Token) ??
             throw new IOException("Агент не ответил.");
-        if (text.Length > 4096) throw new InvalidDataException("Ответ слишком большой.");
+        if (text.Length > 8192) throw new InvalidDataException("Ответ слишком большой.");
         using var doc = JsonDocument.Parse(text);
         var root = doc.RootElement;
         string status = root.GetProperty("status").GetString() ?? "BLOCKED";
         string error = root.TryGetProperty("error", out var e) ? e.GetString() ?? "" : "";
+        if (action == "unity_diagnostics")
+        {
+            // Private, locally redacted multiline report. No GitHub upload.
+            var report = new StringBuilder();
+            report.AppendLine("UNITY · ЛОКАЛЬНЫЙ ОТЧЁТ");
+            report.AppendLine("Статус получения: " + status);
+            report.AppendLine("Выполненное действие: " + Field(root, "lastOperation"));
+            report.AppendLine("Результат действия: " + Field(root, "lastOperationStatus"));
+            report.AppendLine("Завершено UTC: " + Field(root, "lastCompletedUtc"));
+            report.AppendLine();
+            AppendBlock(report, root, "cliErrors", "КОНСОЛЬ UNITY CLI");
+            report.AppendLine();
+            AppendBlock(report, root, "editorErrors", "КОНСОЛЬ UNITY EDITOR");
+            report.AppendLine();
+            report.AppendLine("Только локально. Не опубликовано в GitHub.");
+            return report.ToString();
+        }
         string result = status switch
         {
             "PASS" => "Unity Editor подключён и отвечает.",
@@ -36,6 +53,25 @@ internal static class UnityLocalClient
             _ => "Старая версия агента не поддерживает Unity API: " + error
         };
         return result;
+    }
+
+    private static string Field(JsonElement parent, string property) =>
+        parent.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String ?
+            value.GetString() ?? "неизвестно" : "неизвестно";
+
+    private static void AppendBlock(StringBuilder report, JsonElement root,
+        string field, string heading)
+    {
+        report.AppendLine("=== " + heading + " ===");
+        if (!root.TryGetProperty(field, out var items) ||
+            items.ValueKind != JsonValueKind.Array || items.GetArrayLength() == 0)
+        {
+            report.AppendLine("Подходящих сообщений об ошибках нет.");
+            return;
+        }
+        foreach (var line in items.EnumerateArray().Take(10))
+            if (line.ValueKind == JsonValueKind.String)
+                report.AppendLine(line.GetString());
     }
 }
 
