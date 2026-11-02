@@ -6,6 +6,14 @@
 
 
 
+
+## 2026-11-02 — новый обязательный QA-gate: Agent startup BLOCKED
+
+- **Доказательство:** пользователь запустил `Run-Unity-QA.ps1` в изолированной QA-папке SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e` / RunId `41493135234` и получил `BLOCKED: QA Agent exited unexpectedly`. STAGING PASS ≠ QA Agent START PASS. Не объявлять реальный Unity E2E.
+- **Диагностика в коде:** Draft PR #30 `e40f311e89375e6ddf08cf582c14bed38ae44f93` добавляет безопасные коды причин и предварительный отказ от elevated прав, без автоповышения/обхода CurrentUserOnly Named Pipe и без изменения установленного агента. Проверка синтаксиса сгенерированного launcher в Windows PowerShell 5.1 введена, но реальный запуск ещё ожидает CI+ПК.
+- **Следующие проверки:** (1) read-only `--diagnose` для установленного в QA Agent (isElevated); (2) 3/3 Windows CI на новом SHA; (3) новый isolated stage, проверка двух SHA-256 и локальный запуск QA в обычном Windows-пользователе; (4) только после подтверждения Agent process → `UNITY · ЛОГИ` и реальные CLI/Editor ошибки или BLOCKED; (5) reimport UPM с шестью `.meta`, сцена с тремя платформами и save/reopen.
+- **Остальные долги:** приватный PNG+отчёт — только LOCAL_ONLY до отдельного разрешения, проверки закрытого назначения и реального ChatGPT readback; PR #25 upgrade/rollback E2E и issue #23 остаются открыты. Никакой замены `uUnityBridge_App` и никакого stable Release.
+
 ## 2026-11-02 — закрыта блокировка подготовки QA (только staging)
 
 **Локальный результат пользователя:** сценарий на SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`, Windows run `41493135234` проверил SHA-256 Desktop/Agent и Agent self-test, создал новый QA-слот `4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35`. Состояние **LOCAL_QA_STAGING_PASS**, не `UNITY_E2E_PASS`. Ошибка `To launch QA only` связана с вводом текста-подсказки вместо команды. В текущем run отсутствует доказательство запуска QA Desktop. Старая QA-папка и production не перезаписывались этим staging.
