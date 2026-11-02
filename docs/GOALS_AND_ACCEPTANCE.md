@@ -8,6 +8,15 @@
 
 
 
+
+## 2026-11-02 — уточнение gate для локального QA Agent
+
+**Факт ПК:** `--diagnose` возвратил `isElevated=false`, но старый `--serve-qa` ранее мгновенно завершился без кода выхода. Локальный BLOCKED остаётся.
+
+**Код Draft PR #30:** `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47` — QA IPC routing и runtime тест `--serve-qa`; код 2 запрещает запуск без QA flag, код 5 запрещает elevated QA. Первая Agent CI `41502830937` FAIL из-за остаточного native exit code после **ожидаемого** отказа, исправлено отдельным коммитом. До подтверждения новых 3/3 CI **не считать QA build готовым к тесту**; изоляция production обязательна.
+
+**Приёмка:** (1) старый QA Agent временно запустить с QA flag и показать exit code / running, не трогая production; (2) новый CI exact SHA; (3) локальный QA Desktop и настоящие `UNITY · ЛОГИ`; (4) Unity UPM 6 .meta и сцена 3 платформы/save/reopen; (5) приватный PNG только после отдельного разрешения, PR #25 E2E rollback остаётся открыт.
+
 ## 2026-11-02 — QA readiness evidence: isElevated=false; isolate QA handshake
 
 - **PASS (только диагностика прав):** пользователь выполнил `--diagnose` на old staged QA Agent 0.2.1-preview, результат `isElevated=false`. Это не подтверждает здоровье Named Pipe и не объясняет старое завершение `--serve-qa`.
