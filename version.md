@@ -3,6 +3,10 @@
 **Снимок проверен:** 2 ноября 2026 года. Это **история разработки**, а не онлайн-датчик компьютера. Актуальные публикации, PR и результаты тестов проверяются по ссылкам.
 [Машинная история](version.json) · [Наглядная HTML-страница](version.html) · [План и критерии](docs/GOALS_AND_ACCEPTANCE.md) · [Правила проекта](AGENTS.md).
 
+## 2 ноября 2026 — QA заблокирован существующим каталогом
+
+На контрольном SHA `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6`, CI RunId `41485132406` пользователь получил `BLOCKED: QA folder already exists` для `%LOCALAPPDATA%\uUnityBridge-QA\2ef31bc8fb75`. Защита от перезаписи сработала, но новая QA-сборка **не подтверждена**; источник имеющихся файлов неизвестен. Следующий gate: read-only инвентаризация плюс независимые SHA256 Desktop/Agent с артефактами успешного CI; потом локальный QA логов, UPM reimport и сцены. PR #25 остаётся Draft, `mergeable=false` при проверке; приватная передача PNG отключена. См. [CONTINUE_HERE.md](CONTINUE_HERE.md).
+
 ## Исправление CI и подготовка безопасного QA — 2 ноября 2026
 
 **Windows CI для проверенного HEAD PR #30 `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` — 3/3 PASS:** [Desktop + Agent №41485132406](https://github.com/sunpole/uUnityBridge/actions/runs/41485132406), [протокол агента №41485132430](https://github.com/sunpole/uUnityBridge/actions/runs/41485132430), [Unity UPM/.meta №41485132420](https://github.com/sunpole/uUnityBridge/actions/runs/41485132420). Артефакты обоих EXE относятся к одному CI №41485132406. **Ни исправленный Unity Editor Console, ни новый pinned UPM Git package на пользовательском ПК повторно не проверены.**
