@@ -66,6 +66,30 @@ jobs:
             throw 'QA stage must not force overwrite, remove or move existing files'
           }
           Write-Host 'PASS: QA stage syntax and unique no-overwrite slot safeguards'
+          # Also parse the generated launcher; parsing Stage alone does not
+          # validate the PowerShell source inside its single-quoted here-string.
+          $launcherMatch = [regex]::Match($body,
+            "(?s)\\\$launcher\\s*=\\s*@'\\r?\\n(?<script>.*?)\\r?\\n'@\\r?\\n\\\$launcherFile")
+          if (-not $launcherMatch.Success) {
+            throw 'Embedded QA launcher not found'
+          }
+          $launcherTokens = $null
+          $launcherErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseInput(
+            $launcherMatch.Groups['script'].Value,
+            [ref]$launcherTokens, [ref]$launcherErrors
+          ) | Out-Null
+          if ($launcherErrors.Count -gt 0) {
+            throw 'Generated QA launcher has invalid Windows PowerShell syntax'
+          }
+          foreach ($required in @('BLOCKED_QA_ELEVATED_CONTEXT',
+              'BLOCKED_QA_AGENT_ALREADY_RUNNING', 'BLOCKED_QA_AGENT_EXIT_UNKNOWN',
+              '--serve-qa', 'QA Desktop')) {
+            if (-not $launcherMatch.Groups['script'].Value.Contains($required)) {
+              throw "Missing QA launcher diagnostic gate: $required"
+            }
+          }
+          Write-Host 'PASS: generated QA launcher syntax and categorized startup BLOCKED codes'
       - name: Publish portable x64 EXE
         shell: pwsh
         run: |
