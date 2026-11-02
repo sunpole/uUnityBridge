@@ -53,6 +53,19 @@ internal static class UnityDiagnosticLog
         return line.Length <= MaxLineCharacters ? line : line[..MaxLineCharacters] + "…";
     }
 
+    internal static bool HeaderMatchesApprovedProject(string header, string project)
+    {
+        string normalized = header.Replace('\\', '/');
+        string approved = Path.GetFullPath(project).Replace('\\', '/');
+        int start = normalized.IndexOf(approved, StringComparison.OrdinalIgnoreCase);
+        if (start < 0) return false;
+        int end = start + approved.Length;
+        // A different folder like uUnityDemoBackups must not qualify.
+        return end == normalized.Length ||
+            char.IsWhiteSpace(normalized[end]) ||
+            normalized[end] is '\'' or '"' or ',' or ';';
+    }
+
     // Unity Editor writes its Console to a known per-user Editor.log on Windows.
     // This is a best-effort excerpt, not a guaranteed live Console subscription.
     internal static string[] ReadEditorErrors(string approvedProject)
@@ -72,10 +85,8 @@ internal static class UnityDiagnosticLog
             int prefixLength = (int)Math.Min(32 * 1024, stream.Length);
             var prefix = new byte[prefixLength];
             int got = stream.Read(prefix, 0, prefix.Length);
-            string header = Encoding.UTF8.GetString(prefix, 0, got)
-                .Replace('\\', '/');
-            string approved = Path.GetFullPath(approvedProject).Replace('\\', '/');
-            if (!header.Contains(approved, StringComparison.OrdinalIgnoreCase))
+            string header = Encoding.UTF8.GetString(prefix, 0, got);
+            if (!HeaderMatchesApprovedProject(header, approvedProject))
                 return [];
             long count = Math.Min(stream.Length, MaxEditorTailBytes);
             stream.Seek(-count, SeekOrigin.End);
