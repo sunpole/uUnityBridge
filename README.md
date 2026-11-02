@@ -5,7 +5,7 @@
 > согласованный снимок только окна Unity обратно в ChatGPT. **В настоящее
 > время эта цепочка ещё не реализована.**
 
-## Текущее состояние · 1 ноября 2026
+## Текущее состояние · 2 ноября 2026
 
 | Компонент | Проверенное состояние |
 | --- | --- |
@@ -13,7 +13,14 @@
 | Updater | На ПК был `0.4.0.0`; обновляет Desktop, а не установленный Agent |
 | Agent | На ПК подтверждён `0.2.1.0`, GitHub Issue `status` [PASS](https://github.com/sunpole/uUnityBridge/issues/29) |
 | P0010 | [Draft PR #25](https://github.com/sunpole/uUnityBridge/pull/25): новый безопасный deploy и Agent bootstrap, CI PASS, реальный Windows E2E ещё не пройден |
-| Unity Editor / сцены / скриншоты | **Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30)**: Editor package 0.1.0 и четыре команды, [контрактный CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505). **Unity Hub/Editor у пользователя ещё не установлены, реальная сцена не проверена; скриншотов и удалённого Unity API нет** |
+| Unity Editor / сцены / скриншоты | **Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30)**: Editor package 0.1.0 и четыре команды, [контрактный CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505). **Unity 6.6 установлен**, но реальная сцена и новые команды не проверены; скриншотов и удалённого Unity API нет |
+
+**Локальные Unity CLI-кнопки и три команды** (`unity_status`,
+`unity_project_create`, `unity_project_open`) уже добавлены в Draft
+[PR #30](https://github.com/sunpole/uUnityBridge/pull/30).
+Разрешение папки выдаётся пользователем только через новый GUI;
+сообщение GitHub Issue не может его выдать. Код **ещё не установлен**.
+Подробности: [Unity Agent CLI](https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/UNITY_AGENT_CLI.md).
 
 Проверка CI — не доказательство, что программа обновлена на вашем ПК.
 Не заменяйте вручную рабочие EXE и не используйте PR-артефакты как
