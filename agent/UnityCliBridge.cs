@@ -109,6 +109,8 @@ internal sealed class UnityCliBridge : IUnityBridge
     private Task? active;
     private string lastOperation = "none";
     private string lastOutcome = "not_run";
+    private string[] lastCliErrors = [];
+    private DateTimeOffset lastFinishedUtc = DateTimeOffset.MinValue;
     internal static readonly UnityCliBridge Shared = new();
 
     public async Task<object> RunAsync(string action, CancellationToken ct)
@@ -116,6 +118,32 @@ internal sealed class UnityCliBridge : IUnityBridge
         try
         {
             var approval = UnityCliPolicy.ReadApproval();
+            if (action == "unity_diagnostics")
+            {
+                string previous;
+                string outcome;
+                string[] cli;
+                DateTimeOffset completed;
+                lock (gate)
+                {
+                    previous = lastOperation;
+                    outcome = lastOutcome;
+                    cli = lastCliErrors.ToArray();
+                    completed = lastFinishedUtc;
+                }
+                return new
+                {
+                    status = "PASS", action,
+                    lastOperation = previous,
+                    lastOperationStatus = outcome,
+                    lastCompletedUtc = completed == DateTimeOffset.MinValue ?
+                        null : completed.ToString("O"),
+                    cliErrors = cli,
+                    editorErrors = UnityDiagnosticLog.ReadEditorErrors(),
+                    privateLocalOnly = true,
+                    note = "Best-effort redacted excerpts, not entire Unity Console."
+                };
+            }
             var plan = UnityCliPolicy.Build(action, approval);
 
             if (!plan.ChangesFiles)
@@ -123,8 +151,8 @@ internal sealed class UnityCliBridge : IUnityBridge
                 using var process = Start(plan, capture: true);
                 using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 limit.CancelAfter(TimeSpan.FromSeconds(8));
-                Task<string> stdout = process.StandardOutput.ReadToEndAsync(limit.Token);
-                Task<string> stderr = process.StandardError.ReadToEndAsync(limit.Token);
+                Task<string> stdout = ReadTailAsync(process.StandardOutput, limit.Token);
+                Task<string> stderr = ReadTailAsync(process.StandardError, limit.Token);
                 try { await process.WaitForExitAsync(limit.Token); }
                 catch (OperationCanceledException)
                 {
@@ -132,8 +160,20 @@ internal sealed class UnityCliBridge : IUnityBridge
                     return new { status = "BLOCKED", action, error = "unity_cli_timeout" };
                 }
                 string output = await stdout;
-                _ = await stderr; // Never return raw CLI logs or local paths.
+                string errorOutput = await stderr;
                 bool ready = process.ExitCode == 0 && HasVerifiedReadyJson(output);
+                lock (gate)
+                {
+                    if (!ready)
+                    {
+                        lastOperation = action;
+                        lastOutcome = process.ExitCode == 0 ?
+                            "EDITOR_NOT_READY" : "UNITY_CLI_FAILED";
+                        lastCliErrors = UnityDiagnosticLog.Excerpt(
+                            errorOutput + "\n" + output, errorsOnly: false);
+                        lastFinishedUtc = DateTimeOffset.UtcNow;
+                    }
+                }
                 string previous;
                 string previousOutcome;
                 lock (gate) { previous = lastOperation; previousOutcome = lastOutcome; }
@@ -152,9 +192,10 @@ internal sealed class UnityCliBridge : IUnityBridge
                     return new { status = "BLOCKED", action, error = "unity_operation_busy" };
 
                 // Launch before acknowledging; completion is NOT claimed.
-                var process = Start(plan, capture: false);
+                var process = Start(plan, capture: true);
                 lastOperation = action;
                 lastOutcome = "RUNNING";
+                lastCliErrors = [];
                 active = MonitorAsync(process);
                 return new { status = "ACCEPTED", action,
                     completion = "pending", error = "" };
@@ -208,21 +249,50 @@ internal sealed class UnityCliBridge : IUnityBridge
         using (process)
         {
             int code = -1;
+            string output = "";
+            string errors = "";
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            Task<string> stdout = ReadTailAsync(process.StandardOutput, timeout.Token);
+            Task<string> stderr = ReadTailAsync(process.StandardError, timeout.Token);
             try
             {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
                 await process.WaitForExitAsync(timeout.Token);
                 code = process.ExitCode;
+                output = await stdout;
+                errors = await stderr;
             }
             catch (OperationCanceledException)
             {
-                try { if (!process.HasExited) process.Kill(); }
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
                 catch (InvalidOperationException) { }
             }
             catch (Exception e) when (e is IOException or InvalidOperationException) { }
-            lock (gate) lastOutcome = code == 0 ? "CLI_EXIT_0_VERIFY_IN_UNITY" :
-                "CLI_FAILED_OR_TIMED_OUT";
+            lock (gate)
+            {
+                lastOutcome = code == 0 ? "CLI_EXIT_0_VERIFY_IN_UNITY" :
+                    "CLI_FAILED_OR_TIMED_OUT";
+                lastCliErrors = UnityDiagnosticLog.Excerpt(
+                    errors + "\n" + output, errorsOnly: code == 0);
+                lastFinishedUtc = DateTimeOffset.UtcNow;
+            }
         }
+    }
+
+    // Always drain both streams, retaining only a bounded tail in memory.
+    // This avoids blocking Unity CLI on a full stdout/stderr pipe.
+    private static async Task<string> ReadTailAsync(StreamReader reader, CancellationToken ct)
+    {
+        const int maxCharacters = 8192;
+        char[] buffer = new char[2048];
+        var data = new System.Text.StringBuilder();
+        int count;
+        while ((count = await reader.ReadAsync(buffer.AsMemory(), ct)) > 0)
+        {
+            data.Append(buffer, 0, count);
+            if (data.Length > maxCharacters)
+                data.Remove(0, data.Length - maxCharacters);
+        }
+        return data.ToString();
     }
 
     private static Process Start(UnityCliPolicy.Plan plan, bool capture)
