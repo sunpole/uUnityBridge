@@ -8,6 +8,8 @@
 
 ## Контрольная точка 2026-11-02: починка CI, новое QA и приватные доказательства
 
+**Windows CI для проверенного HEAD PR #30 `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` — 3/3 PASS:** [Desktop + Agent №41485132406](https://github.com/sunpole/uUnityBridge/actions/runs/41485132406), [протокол агента №41485132430](https://github.com/sunpole/uUnityBridge/actions/runs/41485132430), [Unity UPM/.meta №41485132420](https://github.com/sunpole/uUnityBridge/actions/runs/41485132420). Артефакты обоих EXE относятся к одному CI №41485132406. **Ни исправленный Unity Editor Console, ни новый pinned UPM Git package на пользовательском ПК повторно не проверены.**
+
 **Приоритет из запроса пользователя:** `.meta` Unity UPM → корректные ошибки Unity Console →
 изолированная QA-сборка → приватная доставка снимка/журнала в ChatGPT.
 
