@@ -103,7 +103,11 @@ internal static class UnityWindowCapture
             "uUnityBridge-QA", "captures");
         Directory.CreateDirectory(destination);
         string final = Path.Combine(destination, "latest-unity-window.png");
-        bitmap.Save(final, ImageFormat.Png);
+        string staging = final + ".next";
+        if (File.Exists(staging))
+            return "BLOCKED: a previous capture is still being saved.";
+        bitmap.Save(staging, ImageFormat.Png);
+        File.Move(staging, final, overwrite: true);
         string sha;
         using (var input = File.OpenRead(final))
             sha = Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant();
