@@ -101,19 +101,23 @@
         "realUnityE2ePassed": false,
         "lastStagingAttempt": {
           "date": "2026-11-02",
-          "sha": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
-          "runId": 41485132406,
-          "status": "blocked_existing_qa_folder",
-          "folder": "%LOCALAPPDATA%/uUnityBridge-QA/2ef31bc8fb75",
-          "qaFilesVerified": false,
-          "newQaStarted": false,
-          "next": "read-only inventory and independent Desktop/Agent artifact hash validation; no overwrite"
+          "headSha": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e",
+          "runId": 41493135234,
+          "status": "local_stage_pass_editor_qa_pending",
+          "slotName": "4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35",
+          "desktopAndAgentSha256Verified": true,
+          "agentSelfTestPassed": true,
+          "qaDesktopStarted": false,
+          "editorLogVerified": false,
+          "upmReimportVerified": false,
+          "sceneVerified": false,
+          "source": "Windows PowerShell output supplied by user"
         },
         "stageCollisionFix": {
           "date": "2026-11-02",
           "headSha": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e",
           "commit": "dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2",
-          "status": "ci_pass_local_qa_pending",
+          "status": "ci_pass_local_staging_pass_editor_qa_pending",
           "slotStrategy": "sha12-runId-randomGuid",
           "preservesOldQaFolder": true,
           "script": "scripts/Stage-Unity-QA.ps1",
@@ -123,7 +127,7 @@
             41493135193
           ],
           "ciPassed": true,
-          "qaStageRunOnUserPc": false,
+          "qaStageRunOnUserPc": true,
           "realUnityE2eVerified": false,
           "workflowRunArtifactNames": [
             "uUnityBridge-windows-x64-ci",
@@ -298,6 +302,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA staging PASS on Windows; launcher not run",
+      "kind": "local_stage_pass_editor_qa_pending",
+      "result": "User ran QA stage for exact PR #30 SHA 4ed8ca7, run 41493135234: two EXE SHA256 verified and Agent --self-test PASS. New isolated QA folder created. Then typed explanatory text 'To launch QA only', causing PowerShell CommandNotFound; launcher not yet observed. Unity logs, UPM .meta reimport, scene E2E and private upload remain unverified.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41493135234"
+    },
     {
       "date": "2026-11-02",
       "version": "New isolated QA unique-slot script 3/3 Windows CI PASS",
