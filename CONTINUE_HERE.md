@@ -6,6 +6,45 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## 2026-11-02 — новый QA: ошибки консоли и локальный снимок Unity
+
+**Состояние:** только в Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30),
+точный HEAD `e202f4d2816770cd5d248d0ad6e42ff01fc3217a`. **Windows CI 3/3 PASS**:
+[Agent](https://github.com/sunpole/uUnityBridge/actions/runs/41469011247),
+[Desktop](https://github.com/sunpole/uUnityBridge/actions/runs/41469010811),
+[Unity policy](https://github.com/sunpole/uUnityBridge/actions/runs/41469010738).
+**На ПК эта QA-версия ещё не установлена и не проверена.**
+
+Пользователь управляет домашним ПК с телефона через AnyDesk, поэтому
+ручная передача скриншотов в чат — не штатное решение. Добавлены:
+- **UNITY · ЛОГИ:** локальное типизированное `unity_diagnostics` по CurrentUserOnly
+  Named Pipe. Агент записывает ограниченный хвост Unity CLI stdout/stderr и,
+  только если смог доказать принадлежность `Editor.log` разрешённому
+  `uUnityDemo`, показывает до 10 последних сообщений Error/Exception/Warning.
+  Токены, URL, email и локальные пути редактируются, строки ограничены.
+  В UI два раздельных блока: «КОНСОЛЬ UNITY CLI» и «КОНСОЛЬ UNITY EDITOR».
+- **UNITY · КАДР:** одна локальная кнопка в QA Desktop, выбирает окно
+  действительного Unity Editor версии `6000.6.7f1` и проекта `uUnityDemo`,
+  только при локальном согласии. Захват отдельного HWND через PrintWindow
+  (может быть чёрным из-за GPU!), локальный приватный PNG
+  `%LOCALAPPDATA%\\uUnityBridge-QA\\captures\\latest-unity-window.png`,
+  показ в QA-окне. Без отправки скриншота в публичный GitHub.
+- Тесты фильтров, ограничений строк и отказа для чужого `Editor.log` PASS.
+- [Подробный документ](https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/P0015_CAPTURE_DIAGNOSTICS.md).
+
+**Что всё ещё НЕ работает:** снимок из QA ещё не проверен у пользователя;
+он НЕ передаётся автоматически в ChatGPT, нет утверждённого приватного канала
+и нет сквозного ChatGPT→Unity→screenshot→ChatGPT E2E. Это приоритет
+следующей разработки; P0015 и P0016 не отмечать DONE. Рабочие EXE
+`uUnityBridge_App` не менялись. Не загружать приватные снимки в public repo.
+
+**Ближайшее ручное испытание:** закрыть ранее запущенный QA Desktop, скачать
+проверенную новую QA-сборку через `scripts/Stage-Unity-QA.ps1` с exact SHA
+и Run IDs выше, открыть новую QA-копию и нажать `UNITY · ЛОГИ`,
+`UNITY · КАДР`. Только после проверки можно выбрать приватный
+доступный ChatGPT канал и реализовать передачу.
+
+
 ## QA-развёртывание без затрагивания рабочей установки — 2026-11-02
 
 **Важно:** реальной установки нового Desktop/Agent на ПК пока НЕ было; PR #25 и #30 остаются Draft, стабильный Release v0.4.2 без изменений.
