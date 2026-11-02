@@ -13,7 +13,7 @@
 ### Что добавлено и проверено (ТОЛЬКО исходники в Draft PR #30)
 
 [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30), ветка
-`feature/unity-mvp-editor-foundation`, HEAD `d9f9b864646dc1b36845d1cfa68c4ccf2f4cda6e`:
+`feature/unity-mvp-editor-foundation`, HEAD `3c5519711ba37b92f5dee7682261055ec8192db4`:
 
 - `agent/UnityCliBridge.cs` — три типизированных действия
   `unity_status`, `unity_project_create`, `unity_project_open`.
@@ -35,10 +35,10 @@
   `unity_project_open` допускает только существующий Unity-проект.
 - Создание/открытие сначала дают `ACCEPTED`, а НЕ `PASS`:
   асинхронную работу CLI нужно проверить отдельно.
-- **CI для точного HEAD — PASS (3/3):**
-  [Agent + Unity policy #41434303212](https://github.com/sunpole/uUnityBridge/actions/runs/41434303212);
-  [Desktop GUI #41434303708](https://github.com/sunpole/uUnityBridge/actions/runs/41434303708);
-  [Unity Editor policy #41434303188](https://github.com/sunpole/uUnityBridge/actions/runs/41434303188).
+- **CI для точного HEAD — PASS (3/3), включая проверку, что JSON-состояние `not_ready`/`ready:false` не считается подключением:**
+  [Agent + Unity policy #41434916126](https://github.com/sunpole/uUnityBridge/actions/runs/41434916126);
+  [Desktop GUI #41434916270](https://github.com/sunpole/uUnityBridge/actions/runs/41434916270);
+  [Unity Editor policy #41434916382](https://github.com/sunpole/uUnityBridge/actions/runs/41434916382).
   Тесты используют изолированную Windows VM, **не** установленный Unity пользователя.
 - Документ реализации в PR:
   [docs/UNITY_AGENT_CLI.md](https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/UNITY_AGENT_CLI.md).
