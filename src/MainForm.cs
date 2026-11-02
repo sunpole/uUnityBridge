@@ -168,7 +168,8 @@ internal sealed class MainForm : Form
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or
             System.Runtime.InteropServices.ExternalException or ArgumentException or
-            System.Text.Json.JsonException or InvalidOperationException)
+            System.Text.Json.JsonException or InvalidOperationException or
+            KeyNotFoundException)
         {
             status.Text = "Unity · ошибка снимка";
             details.Text = "Код ошибки: " + e.GetType().Name +
