@@ -80,6 +80,31 @@ try
         "another project cannot pass the demo status");
     Check(!UnityCliBridge.HasVerifiedReadyJson("not json"),
         "unstructured CLI status fails closed");
+    string sensitive = "Error: Bearer SUPERPRIVATE_ACCESS_TOKEN abc\n" +
+        "Exception in C:\\Users\\secretuser\\Desktop\\game\\sample.cs\n" +
+        "warning https://example.invalid/log?auth=123\n" +
+        "Failed to build for person@example.com";
+    string[] safeLines = UnityDiagnosticLog.Excerpt(sensitive, errorsOnly: false);
+    string joined = string.Join("\n", safeLines);
+    Check(safeLines.Length == 4, "CLI excerpts remain line-bounded");
+    Check(!joined.Contains("SUPERPRIVATE_ACCESS_TOKEN") &&
+        !joined.Contains("secretuser") &&
+        !joined.Contains("example.invalid") &&
+        !joined.Contains("person@example.com"),
+        "No tokens, local user paths, URLs or emails escape CLI report");
+    Check(joined.Contains("[secret]") && joined.Contains("[local path]") &&
+        joined.Contains("[url]") && joined.Contains("[email]"),
+        "Sensitive data replaced by safe markers");
+    string[] tail = UnityDiagnosticLog.Excerpt(
+        string.Join("\n", Enumerable.Range(0, 22).Select(i => "error message " + i)),
+        errorsOnly: true);
+    Check(tail.Length == 10 && tail[0] == "error message 12" &&
+        tail[^1] == "error message 21",
+        "Only the final ten console errors remain");
+    Check(UnityDiagnosticLog.Excerpt("Unity started\nno diagnostics", true).Length == 0,
+        "No invented error messages when Editor.log has no errors");
+    Check(UnityDiagnosticLog.Sanitize(new string('x', 800)).Length <= 181,
+        "Single-line diagnostic length limited");
     Console.WriteLine($"PASS: {assertions} isolated Unity CLI policy checks. No Editor launched.");
 }
 finally
