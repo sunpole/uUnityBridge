@@ -11,7 +11,7 @@ on:
       - '.github/workflows/agent-windows.yml'
       - 'docs/P0008_AGENT_FOUNDATION.md'
   push:
-    branches: [main]
+    branches: [main, feature/unity-mvp-editor-foundation]
     paths:
       - 'agent/**'
       - 'scripts/Stage-Unity-QA.ps1'
