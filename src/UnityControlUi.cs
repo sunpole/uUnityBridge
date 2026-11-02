@@ -40,7 +40,15 @@ internal static class UnityLocalClient
             report.AppendLine();
             AppendBlock(report, root, "cliErrors", "КОНСОЛЬ UNITY CLI");
             report.AppendLine();
-            AppendBlock(report, root, "editorErrors", "КОНСОЛЬ UNITY EDITOR");
+            string editorSource = Field(root, "editorLogStatus");
+            report.AppendLine("Источник: " + editorSource);
+            if (!editorSource.StartsWith("VERIFIED_", StringComparison.Ordinal))
+            {
+                report.AppendLine("=== КОНСОЛЬ UNITY EDITOR ===");
+                report.AppendLine("BLOCKED: файл журнала не удалось связать с разрешённым Unity. " +
+                    "Это НЕ означает отсутствие ошибок в Unity.");
+            }
+            else AppendBlock(report, root, "editorErrors", "КОНСОЛЬ UNITY EDITOR");
             report.AppendLine();
             report.AppendLine("Только локально. Не опубликовано в GitHub.");
             return report.ToString();
