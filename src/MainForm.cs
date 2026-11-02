@@ -68,9 +68,27 @@ internal sealed class MainForm : Form
             }
         };
         grid.Controls.Add(header, 0, 0);
-        var buttons = new TableLayoutPanel { ColumnCount = 1, Dock = DockStyle.Fill };
-        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        // Unity controls are local typed IPC only. This UI does not launch PowerShell,
+        // parse command text or authorize a folder on behalf of GitHub.
+        var buttons = new TableLayoutPanel { ColumnCount = 5, Dock = DockStyle.Fill };
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+        for (int i = 0; i < 4; i++)
+            buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.25f));
         buttons.Controls.Add(copy, 0, 0);
+        var unitySettings = BigButton("UNITY · ПАПКА", Color.FromArgb(50, 83, 112));
+        var unityStatus = BigButton("UNITY · СТАТУС", Color.FromArgb(42, 92, 115));
+        var unityCreate = BigButton("UNITY · СОЗДАТЬ", Color.FromArgb(42, 92, 115));
+        var unityOpen = BigButton("UNITY · ОТКРЫТЬ", Color.FromArgb(42, 92, 115));
+        foreach (var button in new[] { unitySettings, unityStatus, unityCreate, unityOpen })
+            button.Font = new Font("Segoe UI Semibold", 9, FontStyle.Bold);
+        buttons.Controls.Add(unitySettings, 1, 0);
+        buttons.Controls.Add(unityStatus, 2, 0);
+        buttons.Controls.Add(unityCreate, 3, 0);
+        buttons.Controls.Add(unityOpen, 4, 0);
+        unitySettings.Click += (_, _) => UnityConsentDialog.Show(this);
+        unityStatus.Click += async (_, _) => await RunUnityAsync("unity_status");
+        unityCreate.Click += async (_, _) => await RunUnityAsync("unity_project_create");
+        unityOpen.Click += async (_, _) => await RunUnityAsync("unity_project_open");
         grid.Controls.Add(buttons, 0, 1);
         var split = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1 };
         split.Panel1.Controls.Add(patches);
@@ -111,6 +129,25 @@ internal sealed class MainForm : Form
                 details.Text = e.Message;
             }
         };
+    }
+
+    private async Task RunUnityAsync(string action)
+    {
+        status.Text = "Unity: запрос к локальному агенту...";
+        try
+        {
+            string result = await UnityLocalClient.RequestAsync(action);
+            details.Text = "Unity · " + action + "\r\n\r\n" + result +
+                "\r\n\r\nРеальную готовность сцены проверяют отдельно в Unity Editor.";
+            status.Text = "Unity: " + result;
+        }
+        catch (Exception e) when (e is IOException or TimeoutException or
+            InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+        {
+            status.Text = "Unity API недоступен";
+            details.Text = "Нужна новая версия Agent с Unity API, запущенная от " +
+                "того же пользователя Windows. Причина: " + e.GetType().Name;
+        }
     }
 
     private async Task PollOnceAsync()
