@@ -3,6 +3,25 @@
 **Снимок проверен:** 2 ноября 2026 года. Это **история разработки**, а не онлайн-датчик компьютера. Актуальные публикации, PR и результаты тестов проверяются по ссылкам.
 [Машинная история](version.json) · [Наглядная HTML-страница](version.html) · [План и критерии](docs/GOALS_AND_ACCEPTANCE.md) · [Правила проекта](AGENTS.md).
 
+## Событие: отдельный тестовый режим — 2 ноября 2026
+
+**[Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30)** получил отдельный
+`--serve-qa` Agent и интерфейсный режим `UUB_UNITY_QA=1` с другой
+Named Pipe, Mutex и локальным файлом разрешения. В QA отключены
+GitHub PATCH/ANS и автообновление Desktop; работающие EXE не заменяются.
+Команда создания Unity исправлена: `--path` указывает **родительскую**
+папку проекта, что следует из [руководства Unity CLI](https://github.com/Unity-Technologies/skills/blob/main/skills/unity-cli/SKILL.md).
+В репозитории есть `scripts/Stage-Unity-QA.ps1`, который скачивает
+артефакты только из проверенных успешных CI двух workflow с точным HEAD,
+сверяет SHA-256 Desktop и выполняет локальный self-test Agent.
+Установку/запуск на пользовательском Windows пока никто не проверил.
+
+На HEAD `481fcfef455e868ae498838bd406a71df3c50749` **3/3 CI PASS**:
+[Desktop](https://github.com/sunpole/uUnityBridge/actions/runs/41443979385),
+[Agent](https://github.com/sunpole/uUnityBridge/actions/runs/41443979594),
+[Unity-контракт](https://github.com/sunpole/uUnityBridge/actions/runs/41443979317).
+Это **не** Unity Editor E2E: кнопка пока не нажималась у пользователя.
+
 ## Событие: безопасные команды Unity CLI в интерфейсе — 2 ноября 2026
 
 **[Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) дополнен реальным исходным кодом**
