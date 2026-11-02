@@ -95,7 +95,12 @@ internal static class UnityCliPolicy
 
 // Process execution is never driven by arbitrary caller text. The only process
 // is the user's installed Unity CLI, via ArgumentList (not cmd.exe/PowerShell).
-internal sealed class UnityCliBridge
+internal interface IUnityBridge
+{
+    Task<object> RunAsync(string action, CancellationToken ct);
+}
+
+internal sealed class UnityCliBridge : IUnityBridge
 {
     private readonly object gate = new();
     private Task? active;
@@ -103,7 +108,7 @@ internal sealed class UnityCliBridge
     private string lastOutcome = "not_run";
     internal static readonly UnityCliBridge Shared = new();
 
-    internal async Task<object> RunAsync(string action, CancellationToken ct)
+    public async Task<object> RunAsync(string action, CancellationToken ct)
     {
         try
         {
@@ -155,7 +160,8 @@ internal sealed class UnityCliBridge
             }
         }
         catch (Exception e) when (e is IOException or JsonException or InvalidDataException or
-            UnauthorizedAccessException or System.ComponentModel.Win32Exception or ArgumentException)
+            UnauthorizedAccessException or System.ComponentModel.Win32Exception or ArgumentException or
+            KeyNotFoundException or InvalidOperationException)
         {
             return new { status = "BLOCKED", action, error =
                 e is InvalidDataException ? e.Message : "unity_cli_unavailable_or_invalid_config" };
