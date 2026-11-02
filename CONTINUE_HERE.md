@@ -8,6 +8,23 @@
 
 
 
+
+## 2026-11-02 — LOCAL QA STAGING PASS; запуск Editor ещё ожидается
+
+**Результат Windows PowerShell пользователя:** `Stage-Unity-QA.ps1` для точного Draft PR #30 SHA `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e` и Windows CI RunId `41493135234` завершился сообщениями `PASS: Unity IPC three typed actions`, `PASS: relay schema...`, `PASS: 10 agent protocol tests...`, `PASS: matching Desktop/Agent binaries staged; both SHA-256 verified.`. **Новая изолированная QA-папка создана** (`%LOCALAPPDATA%\uUnityBridge-QA\4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35`). Это локальное подтверждение скачивания/проверки Desktop и Agent, Agent self-test и отсутствия замены production EXE в рамках сценария, но **не факт запуска QA Desktop и не Unity Editor E2E**.
+
+**Следующая введённая пользователем строка `To launch QA only` не была командой:** Windows PowerShell вывел `To : Имя "To" не распознано`. Это ошибка копирования поясняющего текста, не сбой Agent/Unity. Настоящая команда запуска находится после двоеточия в сообщении сценария:
+```powershell
+& "$env:LOCALAPPDATA\uUnityBridge-QA\4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35\Run-Unity-QA.ps1"
+```
+**Не утверждать, что пользователь уже выполнил эту команду**. UX-долг: в будущем выводить отдельную пригодную для копирования строку и предупреждать, что `To launch QA only` — заголовок, а не команда. Не изменять текущий QA-код на одном и том же SHA ради косметики до локальной приёмки.
+
+**Оставшиеся реальные QA-gate:** 1) запуск изолированного Desktop и `UNITY · ЛОГИ` (подтверждённые сообщения Unity CLI/Editor или честный `BLOCKED`); 2) reimport Git UPM пакета с 6 `.meta` из pinned `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`, отсутствие новых `has no meta file`; 3) `Tools → uUnityBridge`, создать демо-сцену с тремя платформами, сохранить и повторно открыть в `uUnityDemo`; 4) локальный sidecar / screenshot QA; 5) отдельное явное разрешение на закрытое хранилище, доказательство приватности, реальный upload/readback ChatGPT, до этого **LOCAL_ONLY / uploadPermitted=false**; 6) [Draft PR #25](https://github.com/sunpole/uUnityBridge/pull/25) isolated E2E upgrade/rollback с проверкой ранее отмеченного `mergeable=false`.
+
+**Приватный транспорт — только проектирование:** возможный адаптер для закрытой папки Google Drive, доступной через уже подключённый к ChatGPT Google Drive-коннектор, **не означает**, что Windows Agent уже умеет аутентифицироваться в Google Drive и загружать файлы. Для реализации нужны отдельное локальное разрешение, ограниченный OAuth-поток/права только на назначенную папку, проверка политики доступа (не anyone/domain), целостности PNG, санитизация JSON, идемпотентность, удаление и независимый readback. Пока разрешения на upload нет и хранилище не выбрано; ничего не создавать и не загружать.
+
+Источники: [PR #30](https://github.com/sunpole/uUnityBridge/pull/30), [Windows CI #41493135234](https://github.com/sunpole/uUnityBridge/actions/runs/41493135234), [PR #25](https://github.com/sunpole/uUnityBridge/pull/25), [Issue #23](https://github.com/sunpole/uUnityBridge/issues/23).
+
 ## 2026-11-02 — QA staging patch: CI 3/3 PASS, приёмка ПК остаётся
 
 [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) HEAD `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`: исправлено создание уникального QA-слота на каждый успешный RunId/SHA без overwrite старого `2ef31bc8fb75`. Первое выполнение добавленного CI guard на `c730ad247e6214ce80272ba4133a6d13e994580e` упало из-за ложного regex-совпадения `Move-Item` внутри `Remove-Item`; guard исправлен коммитом `4ed8ca7`.
