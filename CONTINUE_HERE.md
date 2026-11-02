@@ -6,6 +6,11 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+
+## 2026-11-02 — безопасное устранение коллизии QA в Draft PR #30
+
+В [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) исправлен сценарий `Stage-Unity-QA.ps1`: при проверенном `ExpectedCommit` и успешном `RunId` **каждая попытка теперь использует отдельную уникальную тестовую папку** (`SHA12-RunId-GUID`); старый слот `2ef31bc8fb75` не удаляется и не перезаписывается. Защита от junction/symlink корневого QA-каталога и проверка SHA-256 Desktop/Agent сохранены. В `windows-build.yml` добавлена проверка синтаксиса PowerShell 5.1 и статических правил против перезаписи/удаления. Коммиты: [dfb4d6b](https://github.com/sunpole/uUnityBridge/commit/dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2) → [c730ad2](https://github.com/sunpole/uUnityBridge/commit/c730ad247e6214ce80272ba4133a6d13e994580e). Windows CI на этом HEAD запущены: [Desktop+Agent #41492786845](https://github.com/sunpole/uUnityBridge/actions/runs/41492786845), [Agent #41492786977](https://github.com/sunpole/uUnityBridge/actions/runs/41492786977), [Unity contract #41492786941](https://github.com/sunpole/uUnityBridge/actions/runs/41492786941). **На момент записи CI ещё выполняется, локальная QA НЕ пройдена**. Не объявлять реализацию PASS до результатов CI и проверки на ПК. `uUnityBridge_App` не затронута.
+
 ## 2026-11-02 — QA BLOCKED: существующий тестовый каталог
 
 PowerShell пользователя вернул `BLOCKED: QA folder already exists` при `Stage-Unity-QA.ps1 -ExpectedCommit 2ef31bc8fb75694c77ed0e977bb4ff157a983ff6 -RunId 41485132406` для `%LOCALAPPDATA%\uUnityBridge-QA\2ef31bc8fb75`. Скрипт намеренно запрещает перезапись. **Это не локальный QA PASS:** неизвестны содержимое каталога, целостность его EXE, происхождение файлов и состояние нового запуска.
