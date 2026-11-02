@@ -33,13 +33,13 @@ try
         create.Arguments.SequenceEqual(new[]
         {
             "--no-banner", "--non-interactive", "projects", "create",
-            "uUnityDemo", "--template", "2d", "--editor-version",
-            "6000.6.7f1", "--no-cloud", "--with-pipeline"
+            "uUnityDemo", "--path", profile.Project, "--template", "2d",
+            "--editor-version", "6000.6.7f1", "--no-cloud", "--with-pipeline"
         }), "project creation uses only approved folder/name/2D/version and no cloud");
     var status = UnityCliPolicy.Build("unity_status", profile);
     Check(!status.ChangesFiles &&
         status.Arguments.SequenceEqual(new[] {
-            "--no-banner", "--format", "json", "status"
+            "--no-banner", "--format", "json", "status", "--project-path", profile.Project
         }), "Unity status is read-only and no arbitrary args");
     Deny(() => UnityCliPolicy.Build("powershell", profile),
         "arbitrary command blocked");
