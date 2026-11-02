@@ -120,6 +120,15 @@
     <p>Рабочая установка не затронута. Приватная передача PNG выключена.</p>
   </section>
 
+  <section aria-label="QA Pipe CI проверен">
+    <h2>QA IPC диагностика: Windows CI 3/3 PASS, локальный старт ещё BLOCKED</h2>
+    <p>PR #30 <a href="https://github.com/sunpole/uUnityBridge/commit/67a7c90f92bdb69d08c312299ca4d2e71c9f6f47">67a7c90</a>:
+    Desktop, Agent, Unity CI успешны. GitHub runner elevated, поэтому QA server
+    health runtime не подтверждён на обычном Windows пользователе.
+    Локальный <code>isElevated=false</code>, но причина завершения QA Agent пока неизвестна.</p>
+    <p>Рабочую установку не менять; PNG upload остаётся запрещённым.</p>
+  </section>
+
   <section aria-label="Текущие версии" class="grid">
     <article class="card"><div class="label">Стабильный Desktop</div><strong>v0.4.2</strong><span><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Опубликован в GitHub</a></span></article>
     <article class="card"><div class="label">Агент на ПК — последняя диагностика</div><strong>v0.2.1</strong><span>Связь status проверена; обновление не подтверждено</span></article>
