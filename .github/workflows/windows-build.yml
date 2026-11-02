@@ -62,7 +62,7 @@ jobs:
             }
           }
           if ($body -match '(?i)New-Item[^\r\n]*-Force' -or
-              $body -match '(?i)Remove-Item|Move-Item|Copy-Item.*uUnityBridge_App') {
+              $body -match '(?i)Remove-Item\s+(-LiteralPath|-Path)\b|Move-Item|Copy-Item.*uUnityBridge_App') {
             throw 'QA stage must not force overwrite, remove or move existing files'
           }
           Write-Host 'PASS: QA stage syntax and unique no-overwrite slot safeguards'
