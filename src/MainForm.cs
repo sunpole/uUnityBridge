@@ -142,7 +142,8 @@ internal sealed class MainForm : Form
             status.Text = "Unity: " + result;
         }
         catch (Exception e) when (e is IOException or TimeoutException or
-            InvalidDataException or UnauthorizedAccessException or OperationCanceledException)
+            InvalidDataException or UnauthorizedAccessException or OperationCanceledException or
+            System.Text.Json.JsonException or InvalidOperationException)
         {
             status.Text = "Unity API недоступен";
             details.Text = "Нужна новая версия Agent с Unity API, запущенная от " +
