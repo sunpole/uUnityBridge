@@ -163,7 +163,7 @@ internal static class UnityDiagnosticLog
             long count = Math.Min(stream.Length, MaxEditorTailBytes);
             stream.Seek(-count, SeekOrigin.End);
             var buffer = new byte[(int)count];
-            int length = stream.Read(buffer, 0, length: buffer.Length);
+            int length = stream.Read(buffer, 0, buffer.Length);
             string[] lines = Excerpt(
                 Encoding.UTF8.GetString(buffer, 0, length), errorsOnly: true);
             return new(source, lines);
