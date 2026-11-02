@@ -100,6 +100,15 @@
   </section>
 
   <section>
+    <h2>Консольные ошибки и скриншот только окна Unity</h2>
+    <div class="card">
+      <strong>QA-код и Windows CI — PASS, локальная приёмка ещё не проведена</strong>
+      <p>В Draft PR #30 есть кнопки «UNITY · ЛОГИ» с раздельными блоками ошибок Unity CLI / Editor и «UNITY · КАДР» с локальным предпросмотром только разрешённого окна. Скриншот не загружается в публичный GitHub и ещё не доставляется ChatGPT автоматически.</p>
+      <p><a href="https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/P0015_CAPTURE_DIAGNOSTICS.md">Ограничения и критерии</a> · <a href="https://github.com/sunpole/uUnityBridge/actions/runs/41469011247">Windows CI</a></p>
+    </div>
+  </section>
+
+  <section>
     <h2>Как узнаем, что можно ставить новые цели?</h2>
     <p>Каждый пункт должен иметь ссылку на изменения, CI, действительную приёмку в Windows/Unity и подтверждённый результат. Только когда <strong>все согласованные долги</strong> доказанно закрыты, появляется сообщение: <strong>«ТЕКУЩИЙ НАБОР ЦЕЛЕЙ ЗАВЕРШЁН. НУЖНЫ НОВЫЕ ЦЕЛИ»</strong>.</p>
     <p class="lead">Зелёный CI и документированный план сами по себе не означают готовую программу. На 1 ноября 2026 создана ежедневная условная проверка завершения в ChatGPT, которая не изменяет проект или ПК.</p>
