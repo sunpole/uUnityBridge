@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "d9f9b864646dc1b36845d1cfa68c4ccf2f4cda6e",
+      "referenceCommit": "3c5519711ba37b92f5dee7682261055ec8192db4",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -74,7 +74,14 @@
       "readOnlyGitHubRelayStillStatusOnly": true,
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
-      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "referenceCommit": "3c5519711ba37b92f5dee7682261055ec8192db4",
+      "windowsCi": {
+        "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916126",
+        "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916270",
+        "unityPolicy": "https://github.com/sunpole/uUnityBridge/actions/runs/41434916382"
+      },
+      "ciPassed": true
     }
   },
   "goals": [
