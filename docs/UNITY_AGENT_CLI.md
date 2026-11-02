@@ -13,10 +13,11 @@
   `%LOCALAPPDATA%\uUnityBridge\unity-approval.json` хранит путь
   и `enabled`. Никакое GitHub Issue не меняет разрешение.
 - **UNITY · СТАТУС** — выполнить `unity_status` через
-  Windows Named Pipe текущего пользователя; CLI проверяет связь
-  с работающим Unity Editor, при отсутствии готовности ответ `BLOCKED`.
+  Windows Named Pipe текущего пользователя; CLI проверяет связь через `unity status --project-path <локально-разрешённый uUnityDemo>`;
+  при отсутствии готовности ответ `BLOCKED`. Сырой лог и пути не публикуются.
 - **UNITY · СОЗДАТЬ** — выполнить `unity_project_create` через Named Pipe:
   фиксированный проект `uUnityDemo`, Unity `6000.6.7f1`, 2D,
+  `--path` с точным локально разрешённым расположением,
   `--no-cloud`, `--with-pipeline`. Только если каталог проекта
   **ещё не существует**; не перезаписывать данные.
 - **UNITY · ОТКРЫТЬ** — выполнить `unity_project_open`, только если
