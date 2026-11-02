@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "481fcfef455e868ae498838bd406a71df3c50749",
+      "referenceCommit": "e202f4d2816770cd5d248d0ad6e42ff01fc3217a",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -75,7 +75,7 @@
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "referenceCommit": "481fcfef455e868ae498838bd406a71df3c50749",
+      "referenceCommit": "e202f4d2816770cd5d248d0ad6e42ff01fc3217a",
       "windowsCi": {
         "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594",
         "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979385",
@@ -99,6 +99,34 @@
         },
         "compileAndPolicyCiPassed": true,
         "realUnityE2ePassed": false
+      },
+      "qaDiagnosticsCapture": {
+        "localSourceCode": true,
+        "ciPassed": true,
+        "runDesktop": 41469010811,
+        "runAgent": 41469011247,
+        "runUnityPolicy": 41469010738,
+        "logsAction": "unity_diagnostics",
+        "guiButtons": [
+          "UNITY · ЛОГИ",
+          "UNITY · КАДР"
+        ],
+        "reports": [
+          "Unity CLI",
+          "Unity Editor"
+        ],
+        "redacts": [
+          "secrets",
+          "urls",
+          "emails",
+          "file paths"
+        ],
+        "screenshotScope": "approved Unity Editor HWND only",
+        "screenshotTransport": "local-only",
+        "screenshotUploadedToChatGPT": false,
+        "editorLogMustMatchApprovedProject": true,
+        "realPcQaVerified": false,
+        "remotePrivateDeliveryImplemented": false
       }
     }
   },
@@ -163,10 +191,10 @@
     {
       "id": "P0015",
       "name": "Приватный скриншот только окна Unity",
-      "status": "planned",
+      "status": "ci_pass_qa_pending",
       "blocking": true,
-      "proof": null,
-      "next": "Разрешение пользователя, ограниченный capture и безопасная передача"
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "next": "Испытать QA кнопку кадра, затем закрытое хранилище доступное ChatGPT и настоящее E2E."
     },
     {
       "id": "P0016",
@@ -178,6 +206,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA local Unity diagnostics and window screenshot",
+      "kind": "draft_ci_qa_pending",
+      "result": "Unity CLI/Editor error blocks, sanitized and bounded, plus locally previewed PrintWindow of approved Unity Editor. Windows CI 3/3 PASS; not tested on PC, no private remote upload.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-02",
       "version": "Unity QA isolated staging (Draft PR #30)",
