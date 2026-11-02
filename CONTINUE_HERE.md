@@ -12,6 +12,15 @@
 
 
 
+
+## 2026-11-02 — диагностический QA IPC патч, текущий Windows CI 3/3 PASS
+
+**Проверенный Draft PR #30 HEAD:** `67a7c90f92bdb69d08c312299ca4d2e71c9f6f47`. Все три GitHub Actions завершены **success** на точном SHA: [Desktop+Agent #41503208005](https://github.com/sunpole/uUnityBridge/actions/runs/41503208005), [Agent #41503207919](https://github.com/sunpole/uUnityBridge/actions/runs/41503207919), [Unity contract #41503208078](https://github.com/sunpole/uUnityBridge/actions/runs/41503208078). Windows Desktop CI проверил generated launcher PowerShell 5.1, выпустил тестовые артефакты; Agent CI проверил ожидаемый отказ при elevated/без QA флага. **GitHub Windows hosted runner elevated, поэтому полноценный незаблокированный `--serve-qa` и QA Named Pipe health E2E в этом CI не доказаны**. Любой CI PASS здесь не является проверкой на пользовательском ПК.
+
+**Локальный ПК:** ранее staged QA Agent 0.2.1-preview `--diagnose` вернул `isElevated=false`; запуск `Run-Unity-QA.ps1` ранее ответил `BLOCKED: QA Agent exited unexpectedly` без exit code. Следующий ближайший шаг — **не новая установка**, а временный `--serve-qa` со строго локальным `UUB_UNITY_QA=1` и наблюдением `QA_EXIT_CODE` либо `QA_RUNNING=TRUE`; после 2 секунд остановить **только созданный тестовый PID**. Запуск QA Desktop, `UNITY · ЛОГИ`, reimport 6 `.meta`, `Tools → uUnityBridge`, создание/сохранение/повторное открытие 3-платформенной сцены остаются **BLOCKED / NOT VERIFIED**.
+
+**Ограничения:** не менять рабочую `uUnityBridge_App`; [Draft PR #25](https://github.com/sunpole/uUnityBridge/pull/25) отдельный upgrade/rollback QA и merge conflict pending; [Issue #23](https://github.com/sunpole/uUnityBridge/issues/23) открыт; приватный transport PNG+report остаётся `LOCAL_ONLY`, `uploadPermitted=false`, до явного разрешения и независимого ChatGPT readback.
+
 ## 2026-11-02 — проверка QA IPC в GitHub CI, коррекция ожидаемого кода выхода
 
 **Подтверждённый ПК:** старый QA Agent `--diagnose` вернул `isElevated=false`. Причина прежнего `QA Agent exited unexpectedly` НЕ установлена без exit code от `--serve-qa`. **Никакого нового запуска, переимпорта UPM, Editor Console или сцены не подтверждено.**
