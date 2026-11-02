@@ -132,9 +132,7 @@ internal sealed class UnityCliBridge : IUnityBridge
                 }
                 string output = await stdout;
                 _ = await stderr; // Never return raw CLI logs or local paths.
-                bool ready = process.ExitCode == 0 && output.Length <= 32768 &&
-                    output.Contains("ready", StringComparison.OrdinalIgnoreCase) &&
-                    output.Contains(UnityCliPolicy.Name, StringComparison.OrdinalIgnoreCase);
+                bool ready = process.ExitCode == 0 && HasVerifiedReadyJson(output);
                 string previous;
                 string previousOutcome;
                 lock (gate) { previous = lastOperation; previousOutcome = lastOutcome; }
@@ -168,6 +166,40 @@ internal sealed class UnityCliBridge : IUnityBridge
             return new { status = "BLOCKED", action, error =
                 e is InvalidDataException ? e.Message : "unity_cli_unavailable_or_invalid_config" };
         }
+    }
+
+    // Fail closed: a JSON field such as {"ready":false}, "not_ready",
+    // or a stale diagnostic string must NEVER be reported as Editor PASS.
+    internal static bool HasVerifiedReadyJson(string output)
+    {
+        if (output.Length > 32768) return false;
+        try
+        {
+            using var document = JsonDocument.Parse(output);
+            bool hasProject = output.Contains(UnityCliPolicy.Name,
+                StringComparison.OrdinalIgnoreCase);
+            bool hasExactReady = false;
+            void Walk(JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        if ((property.NameEquals("status") || property.NameEquals("state")) &&
+                            property.Value.ValueKind == JsonValueKind.String &&
+                            string.Equals(property.Value.GetString(), "ready",
+                                StringComparison.OrdinalIgnoreCase))
+                            hasExactReady = true;
+                        Walk(property.Value);
+                    }
+                }
+                else if (element.ValueKind == JsonValueKind.Array)
+                    foreach (var child in element.EnumerateArray()) Walk(child);
+            }
+            Walk(document.RootElement);
+            return hasProject && hasExactReady;
+        }
+        catch (JsonException) { return false; }
     }
 
     private async Task MonitorAsync(Process process)
