@@ -71,7 +71,7 @@ jobs:
               throw "Missing Unity .meta: $asset"
             }
             $contents = Get-Content -LiteralPath $meta -Raw
-            $match = [regex]::Match($contents, '(?m)^guid: ([0-9a-f]{32})$')
+            $match = [regex]::Match($contents, '(?m)^guid: ([0-9a-f]{32})\r?$')
             if (!$match.Success) { throw "Invalid Unity .meta GUID: $asset" }
             $id = $match.Groups[1].Value
             if ($guids.ContainsKey($id)) { throw "Duplicate Unity .meta GUID: $id" }
