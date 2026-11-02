@@ -6,6 +6,76 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## Актуальная контрольная точка — 2026-11-02, Unity Agent → Unity CLI
+
+**Последний факт с ПК:** Unity Hub работает, установлен **Unity Editor 6.6 (6000.6.7f1)**. Unity CLI beta.15 установлен. Пользователь **не подтвердил**, что тестовый `uUnityDemo` создан/открыт. `uUnityBridge_App` и Agent не обновлялись.
+
+### Что добавлено и проверено (ТОЛЬКО исходники в Draft PR #30)
+
+[Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30), ветка
+`feature/unity-mvp-editor-foundation`, HEAD `d9f9b864646dc1b36845d1cfa68c4ccf2f4cda6e`:
+
+- `agent/UnityCliBridge.cs` — три типизированных действия
+  `unity_status`, `unity_project_create`, `unity_project_open`.
+  Запускаются исключительно фиксированные Unity CLI процессы через
+  `ProcessStartInfo.ArgumentList`; PowerShell/CMD не используются.
+- `src/UnityControlUi.cs` и `src/MainForm.cs` — кнопки:
+  **UNITY · ПАПКА**, **UNITY · СТАТУС**, **UNITY · СОЗДАТЬ**,
+  **UNITY · ОТКРЫТЬ**. Desktop передаёт JSON по Windows Named Pipe
+  `CurrentUserOnly`, а не через общедоступный HTTP.
+- Только пользователь на ПК выбирает **существующий родительский каталог**
+  и явно разрешает проект `uUnityDemo` в
+  `%LOCALAPPDATA%\uUnityBridge\unity-approval.json`.
+  Отправленные через GitHub Issue пути, флаги и команды не принимаются.
+- Unity CLI создание проекта `uUnityDemo`: строго определённый `--path`
+  внутри локально разрешённой папки, `--template 2d`,
+  `--editor-version 6000.6.7f1`, `--no-cloud`,
+  `--with-pipeline`. Повторное создание не перезаписывает папку.
+  `unity_status` проверяет только `--project-path` этого проекта.
+  `unity_project_open` допускает только существующий Unity-проект.
+- Создание/открытие сначала дают `ACCEPTED`, а НЕ `PASS`:
+  асинхронную работу CLI нужно проверить отдельно.
+- **CI для точного HEAD — PASS (3/3):**
+  [Agent + Unity policy #41434303212](https://github.com/sunpole/uUnityBridge/actions/runs/41434303212);
+  [Desktop GUI #41434303708](https://github.com/sunpole/uUnityBridge/actions/runs/41434303708);
+  [Unity Editor policy #41434303188](https://github.com/sunpole/uUnityBridge/actions/runs/41434303188).
+  Тесты используют изолированную Windows VM, **не** установленный Unity пользователя.
+- Документ реализации в PR:
+  [docs/UNITY_AGENT_CLI.md](https://github.com/sunpole/uUnityBridge/blob/feature/unity-mvp-editor-foundation/docs/UNITY_AGENT_CLI.md).
+
+### Чего пока нет (НЕ объявлять готовым)
+
+- Установленный у пользователя Desktop `0.4.2.0` и Agent `0.2.1.0`
+  **не содержат** новых действий; код из PR #30 не был доставлен на ПК.
+- **Нет реального E2E**: CLI по кнопке → открытый Unity Editor →
+  сохранённая сцена → подтверждённая проверка.
+- **Нет удалённых** `unity_project_create/open` из GitHub relay:
+  публичные Issues пока поддерживают только старый безопасный `status`.
+  До расширения relay нужны локальное разрешение, устойчивый журнал,
+  контроль повторов и итоговый ответ (не только `ACCEPTED`).
+- Пакет Editor из PR #30 ещё не устанавливался в настоящий Unity и
+  не создавал платформы. Нет приватного скриншотера, нет прямого MCP
+  подключения ChatGPT к локальному ПК.
+- **PR #25 P0010** доставки остаётся Draft; без локального VM E2E не
+  выпускать стабильный Release и не заменять рабочие EXE.
+
+### Что сделать следующим
+
+1. Интеграционно проверить CLI beta.15 на настоящей Unity 6.6:
+   команду `projects create` с `--path`, `--with-pipeline`,
+   `projects open` и `status --project-path`. До этого считать
+   синтаксис и runtime поведение **непроверенными на ПК пользователя**.
+2. Провести безопасную приёмку P0010/PR #25 в изолированной Windows VM;
+   согласовать версии и перенос Agent/Desktop с новым Unity IPC и GUI
+   из PR #30. Не устанавливать CI EXE прямо на рабочую установку.
+3. После безопасного обновления получить явное локальное разрешение
+   папки через GUI и провести реальный `uUnityDemo` E2E.
+4. Затем подключать Editor scene/create/save, подтверждённое screenshot
+   только выбранного окна и устойчивый GitHub relay для типизированных
+   команд. Только реальный видимый результат переводит цель в `done`.
+5. Обновлять `AGENTS.md`, `version.md`, `version.json`, `version.html`,
+   критерии готовности и этот документ по проверенным фактам.
+
 ## Текущая контрольная точка UNITY-MVP — 2026-11-01
 
 **Пользователь уточнил:** Unity Hub, Unity Editor и тестового проекта пока **НЕТ** на Windows ПК. Нельзя требовать от него открыть отсутствующий Editor. Инструкция: с официального `https://unity.com/download` установить Unity Hub, войти в аккаунт (если разрешено правилами платформы), через Installs → Install Editor выбрать **Unity 6.3 LTS**, затем Projects → New project → **2D**, название `uUnityDemo`. Записать версию редактора и подтвердить открытие проекта. Не запускать старые скрипты и не обновлять рабочий uUnityBridge.
