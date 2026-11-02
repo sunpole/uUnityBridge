@@ -135,6 +135,30 @@
           ],
           "initialCiGuardFalsePositiveRun": 41492786845,
           "correctedAt": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e"
+        },
+        "lastLauncherAttempt": {
+          "date": "2026-11-02",
+          "stagedHeadSha": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e",
+          "stagedRunId": 41493135234,
+          "status": "blocked_qa_agent_exited_unexpectedly",
+          "qaDesktopStarted": false,
+          "unityLogsVerified": false,
+          "agentExitCodeKnown": false,
+          "source": "user PowerShell output"
+        },
+        "startupDiagnosticPatch": {
+          "date": "2026-11-02",
+          "headSha": "e40f311e89375e6ddf08cf582c14bed38ae44f93",
+          "commit": "1c3a74333af03b5d9d17ce0def0bb2122481d5ce",
+          "status": "code_in_draft_ci_running_qa_pending",
+          "checks": [
+            "elevation preflight",
+            "exit code 2,3,5 mapping",
+            "unknown exit code",
+            "QA EXE existence",
+            "generated launcher PowerShell parser CI"
+          ],
+          "productionChanged": false
         }
       },
       "qaDiagnosticsCapture": {
@@ -302,6 +326,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA Agent local start BLOCKED; categorized startup diagnostic Draft",
+      "kind": "local_qa_blocked_draft_ci_pending",
+      "result": "Stage for 4ed8ca7 succeeded, but Run-Unity-QA.ps1 launched Agent which immediately exited; Desktop and Unity tests not executed. PR #30 e40f311e89375e6ddf08cf582c14bed38ae44f93 adds elevation/exit-code diagnosis and CI syntax gate, cause not yet proven. No production changes or remote PNG upload.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-02",
       "version": "QA staging PASS on Windows; launcher not run",
