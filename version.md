@@ -3,6 +3,25 @@
 **Снимок проверен:** 2 ноября 2026 года. Это **история разработки**, а не онлайн-датчик компьютера. Актуальные публикации, PR и результаты тестов проверяются по ссылкам.
 [Машинная история](version.json) · [Наглядная HTML-страница](version.html) · [План и критерии](docs/GOALS_AND_ACCEPTANCE.md) · [Правила проекта](AGENTS.md).
 
+## Событие: ошибки консоли + локальный снимок Unity — 2 ноября 2026
+
+В Draft [PR #30](https://github.com/sunpole/uUnityBridge/pull/30) созданы
+кнопки `UNITY · ЛОГИ` и `UNITY · КАДР`. Агент сохраняет ограниченные
+фрагменты stderr/stdout Unity CLI и безопасно извлекает ошибки
+`Editor.log` только при подтверждении разрешённого проекта.
+Текстовые отчёты делятся на **блок Unity CLI** и **блок Unity Editor**,
+с редакцией токенов, URL, email и локальных путей. Второе действие
+делает локальный снимок строго выбранного окна Unity Editor через
+`PrintWindow` и показывает локальный предпросмотр — НЕ отправляет его
+в ChatGPT. GPU-рендеринг может выдавать пустое окно, ещё нужна проверка.
+
+На HEAD `e202f4d2816770cd5d248d0ad6e42ff01fc3217a`:
+[Desktop CI](https://github.com/sunpole/uUnityBridge/actions/runs/41469010811) PASS,
+[Agent CI](https://github.com/sunpole/uUnityBridge/actions/runs/41469011247) PASS,
+[Unity contract](https://github.com/sunpole/uUnityBridge/actions/runs/41469010738) PASS.
+**На домашнем ПК не тестировалось**; автоматическая защищённая
+передача изображения/лога в ChatGPT ещё не реализована.
+
 ## Событие: отдельный тестовый режим — 2 ноября 2026
 
 **[Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30)** получил отдельный
