@@ -131,13 +131,13 @@
         "localScreenshotProof": "User screenshot in ChatGPT on 2026-11-02: Unity window 1936x1056 captured, sha256 prefix 5f000f273225943d",
         "realPcConsoleErrorsVisibleButDiagnosticsMissing": true,
         "diagnosticPatchDraftHead": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
-        "diagnosticPatchCiPending": true,
+        "diagnosticPatchCiPending": false,
         "metaFilesFixedInDraft": true,
         "metaFixRealUnityVerified": false,
         "largeConsoleDialogFixedInDraft": true,
         "privateDeliveryVerified": false,
         "realPcEditorConsoleReadVerified": false,
-        "matchedDesktopAgentCiPending": true,
+        "matchedDesktopAgentCiPending": false,
         "monorepoCiArtifactWorkflow": ".github/workflows/windows-build.yml",
         "metaCount": 6,
         "metaFilesInGitVerified": 6,
@@ -148,11 +148,28 @@
         "qaRunIdRequired": true,
         "requireBothExecutableSha256": true,
         "latestUnifiedDesktopAgentCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41485132406",
-        "latestUnifiedDesktopAgentCiPass": false,
+        "latestUnifiedDesktopAgentCiPass": true,
         "localManifestImplementedInDraft": true,
         "localManifestStatus": "LOCAL_ONLY",
         "uploadPermitted": false,
-        "realPcQAForNewVersionVerified": false
+        "realPcQAForNewVersionVerified": false,
+        "ciRunsExactHead": {
+          "sha": "2ef31bc8fb75694c77ed0e977bb4ff157a983ff6",
+          "desktopAgent": 41485132406,
+          "agentContract": 41485132430,
+          "unityContract": 41485132420,
+          "allPassed": true
+        },
+        "ciArtifacts": {
+          "desktop": {
+            "id": 13162251553,
+            "name": "uUnityBridge-windows-x64-ci"
+          },
+          "agent": {
+            "id": 13161132383,
+            "name": "uUnityBridge-agent-p0008-preview"
+          }
+        }
       }
     },
     "privateEvidenceRelay": {
@@ -245,9 +262,9 @@
     {
       "date": "2026-11-02",
       "version": "CI workflow repair and QA single-run staging plus evidence manifest",
-      "kind": "draft_ci_qa_pending",
-      "result": "Restored malformed YAML workflows and CRLF .meta validation; QA script verifies exact single successful CI run and SHA-256 of both EXEs. Local screenshot manifest in Draft is LOCAL_ONLY, uploadPermitted=false. No new Unity Editor on-device E2E.",
-      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+      "kind": "draft_ci_pass_qa_pending",
+      "result": "Unified Desktop+Agent workflow PASS, agent protocol CI PASS and Unity UPM contract including .meta PASS for exact SHA 2ef31bc8. QA staging uses one successful RunId and hashes both EXEs. No new on-device Unity E2E; screenshot manifest remains LOCAL_ONLY and uploadPermitted=false.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41485132406"
     },
     {
       "date": "2026-11-02",
