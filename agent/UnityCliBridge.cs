@@ -12,7 +12,8 @@ internal static class UnityCliPolicy
     internal const string EditorVersion = "6000.6.7f1";
     internal static string SettingsFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "uUnityBridge", "unity-approval.json");
+        "uUnityBridge", Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1" ?
+            "unity-approval-qa.json" : "unity-approval.json");
 
     internal sealed record Approval(string Parent)
     {
