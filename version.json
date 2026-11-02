@@ -140,7 +140,7 @@
           "date": "2026-11-02",
           "stagedHeadSha": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e",
           "stagedRunId": 41493135234,
-          "status": "blocked_qa_agent_exited_unexpectedly",
+          "status": "blocked_qa_agent_exited_unexpectedly_unknown_exit_code_elevated_excluded_by_diagnose",
           "qaDesktopStarted": false,
           "unityLogsVerified": false,
           "agentExitCodeKnown": false,
@@ -148,9 +148,9 @@
         },
         "startupDiagnosticPatch": {
           "date": "2026-11-02",
-          "headSha": "e40f311e89375e6ddf08cf582c14bed38ae44f93",
+          "headSha": "0dd2f04fbd93f44157a5167a84d6dee782ae904f",
           "commit": "1c3a74333af03b5d9d17ce0def0bb2122481d5ce",
-          "status": "code_in_draft_ci_running_qa_pending",
+          "status": "code_in_draft_ci_pending_local_qa_blocked",
           "checks": [
             "elevation preflight",
             "exit code 2,3,5 mapping",
@@ -159,6 +159,24 @@
             "generated launcher PowerShell parser CI"
           ],
           "productionChanged": false
+        },
+        "lastDiagnostic": {
+          "date": "2026-11-02",
+          "source": "User executed prior staged QA Agent --diagnose",
+          "version": "0.2.1-preview",
+          "isElevated": false,
+          "qaServerStarted": false,
+          "scope": "read_only_agent_diagnostic"
+        },
+        "qaPipeRuntimeTest": {
+          "date": "2026-11-02",
+          "headSha": "0dd2f04fbd93f44157a5167a84d6dee782ae904f",
+          "requiresQaEnvironmentFlag": true,
+          "qaRequestRoutingFix": "47b7216f4bfa942941c2002252c45e827698c08e",
+          "runId": 41502830937,
+          "status": "ci_running_at_report_time",
+          "localQaE2ePassed": false,
+          "hostedElevatedRunnerMustBlockInsteadOfClaimPass": true
         }
       },
       "qaDiagnosticsCapture": {
@@ -326,6 +344,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA Agent privilege check PASS (non-elevated); QA startup remains blocked",
+      "kind": "local_diagnose_non_elevated_qa_start_blocked",
+      "result": "User QA Agent --diagnose returned isElevated=false. Old isolated QA --serve-qa exited unexpectedly without an exit code in launcher. Cause unverified. Draft PR #30 0dd2f04fbd93f44157a5167a84d6dee782ae904f routes QA requests to QA pipe and adds runtime QA CI gate. No desktop/Unity E2E, installation, or remote upload.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-02",
       "version": "QA Agent local start BLOCKED; categorized startup diagnostic Draft",
