@@ -2,7 +2,7 @@ name: Windows desktop build (uUnityBridge)
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/unity-mvp-editor-foundation]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -55,7 +55,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
-      - name: Verify Unity immutable Git package metadata
+      - name: Verify immutable Unity package metadata before QA build
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -70,37 +70,37 @@ jobs:
             if (!(Test-Path -LiteralPath $meta -PathType Leaf)) {
               throw "Missing Unity .meta: $asset"
             }
-            $content = Get-Content -LiteralPath $meta -Raw
-            $match = [regex]::Match($content, '(?m)^guid: ([0-9a-f]{32})
-        uses: actions/upload-artifact@v4
-        with:
-          name: uUnityBridge-windows-x64-ci
-          path: dist/win-x64/
-          if-no-files-found: error
-)
+            $contents = Get-Content -LiteralPath $meta -Raw
+            $match = [regex]::Match($contents, '(?m)^guid: ([0-9a-f]{32})$')
             if (!$match.Success) { throw "Invalid Unity .meta GUID: $asset" }
             $id = $match.Groups[1].Value
             if ($guids.ContainsKey($id)) { throw "Duplicate Unity .meta GUID: $id" }
             $guids[$id] = $true
           }
-          Write-Host 'PASS: six Unity immutable package .meta assets with unique GUIDs'
-      - name: Test and publish matching QA Agent for exactly the same commit
+          Write-Host 'PASS: six immutable Unity package .meta files with unique GUIDs'
+      - name: Validate agent protocol and Unity diagnostic policy
         shell: pwsh
         run: |
           dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { throw 'QA Agent self-test failed' }
           dotnet run --project ./tests/uUnityBridge.UnityBridgeTests/uUnityBridge.UnityBridgeTests.csproj -c Release
-          if ($LASTEXITCODE -ne 0) { throw 'Unity CLI + Editor diagnostic regression tests failed' }
+          if ($LASTEXITCODE -ne 0) { throw 'Unity CLI and Editor diagnostic regression tests failed' }
+      - name: Publish matching QA Agent for same commit
+        shell: pwsh
+        run: |
           dotnet publish ./agent/uUnityBridge.Agent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o ./dist/agent-preview
           if ($LASTEXITCODE -ne 0 -or !(Test-Path ./dist/agent-preview/uUnityBridge.Agent.exe)) {
             throw 'Matching QA Agent artifact missing'
           }
-      - uses: actions/upload-artifact@v4
+          $sha = (Get-FileHash ./dist/agent-preview/uUnityBridge.Agent.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path ./dist/agent-preview).Path 'uUnityBridge.Agent.exe.sha256'), $sha + '  uUnityBridge.Agent.exe' + [Environment]::NewLine)
+      - name: Upload matching QA Agent, CI artifact only
+        uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-agent-p0008-preview
-          path: dist/agent-preview/uUnityBridge.Agent.exe
+          path: dist/agent-preview/
           if-no-files-found: error
-      - name: Upload unsigned build artifact for testing
+      - name: Upload unsigned QA Desktop, CI artifact only
         uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-windows-x64-ci
