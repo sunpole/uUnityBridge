@@ -5,6 +5,8 @@ namespace uUnityBridge;
 
 internal sealed class MainForm : Form
 {
+    private static bool IsUnityQa =>
+        Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1";
     private readonly Button copy = BigButton("ОТЧЁТ · НОВЫХ НЕТ", Color.FromArgb(31, 111, 81));
     private readonly System.Windows.Forms.Timer poller = new() { Interval = 60_000 };
     private bool polling;
@@ -34,7 +36,9 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.4.2";
+        Text = IsUnityQa ?
+            "uUnityBridge · ИЗОЛИРОВАННЫЙ UNITY QA (НЕ РЕЛИЗ)" :
+            "uUnity Bridge · PATCH / ANS · 0.4.2";
         MinimumSize = new Size(740, 480);
         Size = new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -52,7 +56,7 @@ internal sealed class MainForm : Form
         header.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
             Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold) }, 0, 0);
         header.Controls.Add(rollback, 1, 0);
-        rollback.Visible = ReleaseUpdater.BackupAvailable();
+        rollback.Visible = !IsUnityQa && ReleaseUpdater.BackupAvailable();
         rollback.LinkClicked += (_, _) =>
         {
             try
@@ -109,6 +113,19 @@ internal sealed class MainForm : Form
         Shown += async (_, _) =>
         {
             if (split.Width > 450) split.SplitterDistance = 310;
+            if (IsUnityQa)
+            {
+                // Preview must NOT execute production autopilot, updater,
+                // patch history, answer publication or release checks.
+                copy.Enabled = false;
+                copy.Text = "QA · ОТЧЁТЫ ОТКЛЮЧЕНЫ";
+                details.Text = "РЕЖИМ UNITY QA. Рабочие PATCH/ANS, GitHub polling " +
+                    "и автоматический updater полностью отключены.\\r\\n" +
+                    "Выберите отдельную тестовую папку через UNITY · ПАПКА.\\r\\n" +
+                    "Не устанавливайте тестовую сборку в рабочую папку uUnityBridge_App.";
+                status.Text = "Изолированный режим · локальный QA Agent · никаких GitHub PATCH";
+                return;
+            }
             try
             {
                 var history = PatchHistory.Load();
