@@ -239,7 +239,8 @@ internal sealed class GitHubReader : IGitHubReader
 
 internal static class AgentProtocol
 {
-    internal static async Task<object> RunAsync(string request, IGitHubReader github, CancellationToken ct)
+    internal static async Task<object> RunAsync(string request, IGitHubReader github, CancellationToken ct,
+        IUnityBridge? unity = null)
     {
         try
         {
@@ -261,8 +262,10 @@ internal static class AgentProtocol
                 "capabilities" => new
                 {
                     status = "ok",
-                    actions = new[] { "health", "capabilities", "github_status", "repo_status", "workflow_preview" },
-                    commandExecution = false, remoteNetworkListener = false
+                    actions = new[] { "health", "capabilities", "github_status", "repo_status", "workflow_preview",
+                        "unity_status", "unity_project_create", "unity_project_open" },
+                    commandExecution = false, unityCliTypedActions = true,
+                    unityWriteRequiresLocalApproval = true, remoteNetworkListener = false
                 },
                 "github_status" => new
                 {
@@ -275,6 +278,8 @@ internal static class AgentProtocol
                     defaultBranch = await github.GetDefaultBranchAsync(ct)
                 },
                 "workflow_preview" => await PreviewAsync(github, ct),
+                "unity_status" or "unity_project_create" or "unity_project_open" =>
+                    await (unity ?? UnityCliBridge.Shared).RunAsync(action.GetString()!, ct),
                 _ => new { status = "error", error = "unknown_action" }
             };
         }
@@ -318,6 +323,16 @@ internal static class SelfTest
             Task.FromResult(Branch);
     }
 
+    private sealed class FakeUnity : IUnityBridge
+    {
+        internal readonly List<string> Calls = [];
+        public Task<object> RunAsync(string action, CancellationToken _)
+        {
+            Calls.Add(action);
+            return Task.FromResult<object>(new { status = "ACCEPTED", action });
+        }
+    }
+
     internal static async Task<int> RunAsync()
     {
         var fake = new FakeGitHub();
@@ -341,6 +356,24 @@ internal static class SelfTest
             if (actual != test.expected)
                 throw new Exception($"Self test failed. Input: {test.input}");
         }
+
+        var unity = new FakeUnity();
+        foreach (string action in new[] { "unity_status", "unity_project_create", "unity_project_open" })
+        {
+            object answer = await AgentProtocol.RunAsync(
+                JsonSerializer.Serialize(new { action }), fake, CancellationToken.None, unity);
+            using var parsed = JsonDocument.Parse(JsonSerializer.Serialize(answer));
+            if (parsed.RootElement.GetProperty("status").GetString() != "ACCEPTED")
+                throw new Exception("Valid Unity typed action was not dispatched.");
+        }
+        object unsafeUnity = await AgentProtocol.RunAsync(
+            "{\"action\":\"unity_project_create\",\"path\":\"C:\\\\Windows\"}",
+            fake, CancellationToken.None, unity);
+        using (var parsed = JsonDocument.Parse(JsonSerializer.Serialize(unsafeUnity)))
+            if (parsed.RootElement.GetProperty("error").GetString() != "invalid_request" ||
+                unity.Calls.Count != 3)
+                throw new Exception("Extra Unity path was not denied.");
+        Console.WriteLine("PASS: Unity IPC three typed actions and denied extra path.");
 
         fake.Owner = false;
         object blocked = await AgentProtocol.RunAsync("{\"action\":\"workflow_preview\"}",
