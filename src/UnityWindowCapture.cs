@@ -112,6 +112,28 @@ internal static class UnityWindowCapture
         using (var input = File.OpenRead(final))
             sha = Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant();
 
+        // A minimal local-only manifest prepares a future private evidence relay.
+        // This is metadata, not a permission to upload. No paths, window titles,
+        // tokens, raw logs or screenshots leave the Windows user profile.
+        string manifest = Path.Combine(destination, "latest-unity-evidence.json");
+        string manifestTemp = manifest + ".next";
+        if (File.Exists(manifestTemp))
+            return "BLOCKED: a previous evidence manifest is still being saved.";
+        File.WriteAllText(manifestTemp, JsonSerializer.Serialize(new
+        {
+            schema = "uub.unity.evidence.v1",
+            project = "uUnityDemo",
+            editorVersion = ExpectedVersion,
+            capturedAtUtc = DateTimeOffset.UtcNow.ToString("O"),
+            width, height,
+            imageSha256 = sha,
+            imageBytes = new FileInfo(final).Length,
+            scope = "approved_window_only",
+            transport = "LOCAL_ONLY",
+            uploadPermitted = false
+        }));
+        File.Move(manifestTemp, manifest, overwrite: true);
+
         using var preview = new Form
         {
             Text = "uUnityBridge · PRIVATE Unity QA screenshot",
