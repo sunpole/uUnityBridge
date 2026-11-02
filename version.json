@@ -1,6 +1,6 @@
 {
   "schema": "uub.version.history.v1",
-  "lastReviewedOn": "2026-11-01",
+  "lastReviewedOn": "2026-11-02",
   "reference": "https://github.com/sunpole/uUnityBridge/blob/main/CONTINUE_HERE.md",
   "purpose": "Документальный снимок, не телеметрия установленной программы и не доказательство готовности",
   "stableRelease": {
@@ -16,7 +16,10 @@
     "agent": "0.2.1.0",
     "agentProcessObserved": true,
     "afterThisDateUnverified": true,
-    "unityBridgeIntegrationVerified": false
+    "unityBridgeIntegrationVerified": false,
+    "unityEditorInstalledVersion": "6000.6.7f1",
+    "unityEditorInstallationEvidence": "Unity Hub screenshot supplied 2026-11-02",
+    "unityDemoProjectOpened": "not_verified"
   },
   "development": {
     "pullRequest": 25,
@@ -36,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "b06c08b4deb6c3686f1286c836d3be9c18cf52a8",
+      "referenceCommit": "d9f9b864646dc1b36845d1cfa68c4ccf2f4cda6e",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -46,8 +49,32 @@
       ],
       "contractCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41339356505",
       "desktopCi": "https://github.com/sunpole/uUnityBridge/actions/runs/41339356403",
-      "editorInstalledOnUserPc": false,
+      "editorInstalledOnUserPc": true,
       "unityEditorE2eVerified": false
+    },
+    "unityCliLocalApi": {
+      "pullRequest": 30,
+      "state": "draft_qa_pending",
+      "ipcActions": [
+        "unity_status",
+        "unity_project_create",
+        "unity_project_open"
+      ],
+      "guiButtons": [
+        "UNITY · ПАПКА",
+        "UNITY · СТАТУС",
+        "UNITY · СОЗДАТЬ",
+        "UNITY · ОТКРЫТЬ"
+      ],
+      "localApprovalRequired": true,
+      "onlyAllowedProject": "uUnityDemo",
+      "editorVersion": "6000.6.7f1",
+      "cloudCreationDisabled": true,
+      "usesPowerShell": false,
+      "readOnlyGitHubRelayStillStatusOnly": true,
+      "installedOnUserPc": false,
+      "realUnityCliE2eVerified": false,
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
     }
   },
   "goals": [
@@ -73,7 +100,7 @@
       "status": "ci_pass_qa_pending",
       "blocking": true,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "next": "Пользователь устанавливает Unity Hub / Unity 6.3 LTS, создаёт uUnityDemo 2D и проверяет, что пакет создаёт/сохраняет сцену. Код в Draft PR, не установлен.",
+      "next": "Unity 6.6 уже установлен. Испытать безопасно обновлённый Desktop+Agent из PR #30 и создание uUnityDemo; затем Editor package и три платформы в настоящем Unity.",
       "note": "Пакет Unity Editor и четыре локальные команды созданы в Draft PR #30; контрактные .NET/Windows CI PASS. Сам Unity Editor не запускался."
     },
     {
@@ -95,18 +122,18 @@
     {
       "id": "P0013",
       "name": "Диагностика и видимое состояние агента",
-      "status": "planned",
+      "status": "in_development",
       "blocking": true,
-      "proof": null,
-      "next": "UI online/offline, версии, задачи и ошибки"
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "next": "В Draft есть кнопки Unity, но нет развёрнутого GUI диагностики или локальной QA."
     },
     {
       "id": "P0014",
       "name": "Типизированный запуск разрешённого Unity и тестирование",
-      "status": "planned",
+      "status": "in_development",
       "blocking": true,
-      "proof": null,
-      "next": "Запуск только зарегистрированного проекта и команды Unity Editor"
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
+      "next": "Три Unity CLI действия и UI реализованы в Draft; нет реального локального Unity/Agent E2E и удалённого GitHub relay."
     },
     {
       "id": "P0015",
@@ -126,6 +153,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "Unity CLI local IPC/GUI prototype (Draft PR #30)",
+      "kind": "draft_ci_qa_pending",
+      "result": "В исходниках добавлены кнопки Unity, локальное разрешение папки и фиксированные Unity CLI status/create/open. Пока не установлено и не проверено в настоящем Unity Editor.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-01",
       "version": "Unity Editor MVP package 0.1.0 (Draft PR #30)",
