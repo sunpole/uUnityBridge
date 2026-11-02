@@ -201,6 +201,10 @@ jobs:
             }
             else { $env:UUB_UNITY_QA = $saved }
           }
+          # The elevated-runner DENY test intentionally returns native exit 5.
+          # GitHub's pwsh wrapper fails on a residual nonzero LASTEXITCODE even
+          # when the denial was expected and explicitly asserted above.
+          $global:LASTEXITCODE = 0
       - uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-agent-p0008-preview
