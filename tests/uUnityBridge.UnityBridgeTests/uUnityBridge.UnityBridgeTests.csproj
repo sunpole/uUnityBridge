@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../agent/UnityCliBridge.cs" Link="UnityCliBridge.cs"/>
+    <Compile Include="../../agent/UnityDiagnosticLog.cs" Link="UnityDiagnosticLog.cs"/>
   </ItemGroup>
 </Project>
