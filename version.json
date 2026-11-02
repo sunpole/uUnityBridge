@@ -170,13 +170,24 @@
         },
         "qaPipeRuntimeTest": {
           "date": "2026-11-02",
-          "headSha": "0dd2f04fbd93f44157a5167a84d6dee782ae904f",
+          "headSha": "67a7c90f92bdb69d08c312299ca4d2e71c9f6f47",
           "requiresQaEnvironmentFlag": true,
           "qaRequestRoutingFix": "47b7216f4bfa942941c2002252c45e827698c08e",
           "runId": 41502830937,
-          "status": "ci_running_at_report_time",
+          "status": "ci_running_after_expected_exit_code_fix",
           "localQaE2ePassed": false,
-          "hostedElevatedRunnerMustBlockInsteadOfClaimPass": true
+          "hostedElevatedRunnerMustBlockInsteadOfClaimPass": true,
+          "firstCiFailed": {
+            "runId": 41502830937,
+            "cause": "expected elevated exit 5 left residual LASTEXITCODE in pwsh wrapper",
+            "securityGatePassed": true
+          },
+          "correctedAt": "67a7c90f92bdb69d08c312299ca4d2e71c9f6f47",
+          "correctedCiRuns": [
+            41503208005,
+            41503207919,
+            41503208078
+          ]
         }
       },
       "qaDiagnosticsCapture": {
@@ -344,6 +355,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "QA pipe test CI corrected for elevated runner exit code",
+      "kind": "draft_ci_recheck_local_qa_blocked",
+      "result": "PR #30 67a7c90f92bdb69d08c312299ca4d2e71c9f6f47 fixes residual expected Agent exit 5 causing GitHub pwsh test failure; QA IPC client routes to QA pipe by explicit env flag. Actual local --serve-qa still unverified; isElevated=false from user --diagnose. No production change/upload.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41503207919"
+    },
     {
       "date": "2026-11-02",
       "version": "QA Agent privilege check PASS (non-elevated); QA startup remains blocked",
