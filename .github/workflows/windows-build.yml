@@ -41,6 +41,31 @@ jobs:
             throw 'Wildcard PDB deletion is not permitted'
           }
           Write-Host 'PASS: cleanup parser and exact PDB allowlist'
+      - name: Verify isolated QA stage script syntax and no-overwrite policy
+        shell: powershell
+        run: |
+          $stagePath = (Resolve-Path './scripts/Stage-Unity-QA.ps1').Path
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $stagePath, [ref]$tokens, [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host $_.Message }
+            throw 'Invalid QA stage script syntax'
+          }
+          $body = Get-Content -LiteralPath $stagePath -Raw
+          foreach ($required in @('NewGuid', 'ReparsePoint', 'ExpectedCommit', 'RunId',
+              'Check-QAHash', 'No production EXE')) {
+            if (-not $body.Contains($required)) {
+              throw "Missing QA staging safeguard: $required"
+            }
+          }
+          if ($body -match '(?i)New-Item[^\r\n]*-Force' -or
+              $body -match '(?i)Remove-Item|Move-Item|Copy-Item.*uUnityBridge_App') {
+            throw 'QA stage must not force overwrite, remove or move existing files'
+          }
+          Write-Host 'PASS: QA stage syntax and unique no-overwrite slot safeguards'
       - name: Publish portable x64 EXE
         shell: pwsh
         run: |
