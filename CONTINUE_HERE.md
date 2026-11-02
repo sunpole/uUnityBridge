@@ -6,6 +6,14 @@
 
 > ВНИМАНИЕ: это снимок состояния на указанную дату, а не утверждение, что функция уже работает сегодня. Перед новой работой перепроверить GitHub, PR, тесты, Release и ответы агента. Не считать код из draft PR установленным на пользовательский ПК.
 
+## 2026-11-02 — QA BLOCKED: существующий тестовый каталог
+
+PowerShell пользователя вернул `BLOCKED: QA folder already exists` при `Stage-Unity-QA.ps1 -ExpectedCommit 2ef31bc8fb75694c77ed0e977bb4ff157a983ff6 -RunId 41485132406` для `%LOCALAPPDATA%\uUnityBridge-QA\2ef31bc8fb75`. Скрипт намеренно запрещает перезапись. **Это не локальный QA PASS:** неизвестны содержимое каталога, целостность его EXE, происхождение файлов и состояние нового запуска.
+
+[PR #30](https://github.com/sunpole/uUnityBridge/pull/30) открыт как Draft на точном SHA выше. Windows CI 3/3 PASS: [Desktop+Agent 41485132406](https://github.com/sunpole/uUnityBridge/actions/runs/41485132406), [Agent 41485132430](https://github.com/sunpole/uUnityBridge/actions/runs/41485132430), [Unity 41485132420](https://github.com/sunpole/uUnityBridge/actions/runs/41485132420). Оба QA-артефакта доступны в первом run. [PR #25](https://github.com/sunpole/uUnityBridge/pull/25) Draft на `fb840d1bf6bf0de623ec129fb0f70e858b0d78e1`, GitHub сообщает `mergeable=false` (причину перепроверить перед merge). [Issue #23](https://github.com/sunpole/uUnityBridge/issues/23) открыт.
+
+**Следующие блокирующие проверки:** только read-only проверка старого QA-слота; независимая сверка SHA256 обоих EXE со скачанными в отдельную папку артефактами того же RunId и SHA; запуск QA только после сверки и согласия. Затем `UNITY · ЛОГИ` с реальными CLI/Editor ошибками либо честным `BLOCKED`; переимпорт UPM с шестью `.meta` и отсутствие новых предупреждений; `Tools → uUnityBridge`, три платформы, сохранение и повторное открытие сцены. Приватная отправка PNG/санитизированного отчёта не реализована: `LOCAL_ONLY`, `uploadPermitted=false`. Разрешение и проверка закрытого хранилища/чтения ChatGPT обязательны. Отдельный E2E delivery/rollback PR #25 до релиза. `uUnityBridge_App` не изменять.
+
 ## Контрольная точка 2026-11-02: починка CI, новое QA и приватные доказательства
 
 **Windows CI для проверенного HEAD PR #30 `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` — 3/3 PASS:** [Desktop + Agent №41485132406](https://github.com/sunpole/uUnityBridge/actions/runs/41485132406), [протокол агента №41485132430](https://github.com/sunpole/uUnityBridge/actions/runs/41485132430), [Unity UPM/.meta №41485132420](https://github.com/sunpole/uUnityBridge/actions/runs/41485132420). Артефакты обоих EXE относятся к одному CI №41485132406. **Ни исправленный Unity Editor Console, ни новый pinned UPM Git package на пользовательском ПК повторно не проверены.**
