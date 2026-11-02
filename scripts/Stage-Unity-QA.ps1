@@ -75,11 +75,39 @@ $qaAgent = Join-Path $base 'Agent\uUnityBridge.Agent.exe'
 $qaDesktop = Join-Path $base 'Desktop\uUnityBridge.exe'
 $process = $null
 try {
+    # This mirrors the Agent's production security gate; never elevate QA or
+    # silently bypass CurrentUserOnly Named Pipe security.
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    try {
+        $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+        if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            throw 'BLOCKED_QA_ELEVATED_CONTEXT: run PowerShell without administrator rights.'
+        }
+    }
+    finally { $identity.Dispose() }
+
+    foreach ($file in @($qaAgent, $qaDesktop)) {
+        if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
+            throw 'BLOCKED_QA_EXE_MISSING: QA slot is incomplete; do not substitute production files.'
+        }
+    }
+
+    # Do not modify the working installation or launch production Agent.
     $process = Start-Process -FilePath $qaAgent -ArgumentList '--serve-qa' -PassThru -WindowStyle Hidden
     Start-Sleep -Seconds 2
-    if ($process.HasExited) { throw 'BLOCKED: QA Agent exited unexpectedly.' }
-    Write-Host 'PASS: isolated QA started; production EXEs and background agent unchanged.'
-    Write-Host 'PowerShell waits while QA Desktop is open. This is expected.'
+    if ($process.HasExited) {
+        $code = $process.ExitCode
+        $reason = switch ($code) {
+            2 { 'BLOCKED_QA_FLAG_OR_ARGUMENT' }
+            3 { 'BLOCKED_QA_AGENT_ALREADY_RUNNING' }
+            5 { 'BLOCKED_QA_ELEVATED_CONTEXT' }
+            default { 'BLOCKED_QA_AGENT_EXIT_UNKNOWN' }
+        }
+        throw "$reason (Agent exit code $code). No QA Desktop started; production untouched."
+    }
+
+    Write-Host 'PASS: isolated QA Agent process is running; health and Unity E2E not yet verified.'
+    Write-Host 'PowerShell remains open until QA Desktop exits.'
     Write-Host 'Use UNITY LOGS or UNITY FRAME. Only approved Unity window is captured.'
     $desktop = Start-Process -FilePath $qaDesktop -PassThru -Wait
     Write-Host ('QA Desktop exited with code ' + $desktop.ExitCode)
