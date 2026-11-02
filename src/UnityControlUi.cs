@@ -12,7 +12,9 @@ internal static class UnityLocalClient
         if (action is not ("unity_status" or "unity_project_create" or "unity_project_open"))
             throw new InvalidDataException("Команда не разрешена.");
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
-        using var pipe = new NamedPipeClientStream(".", "uUnityBridge.agent.v1",
+        string pipeName = Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1" ?
+            "uUnityBridge.agent.qa.v1" : "uUnityBridge.agent.v1";
+        using var pipe = new NamedPipeClientStream(".", pipeName,
             PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         await pipe.ConnectAsync(3000, timeout.Token);
         using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true)
@@ -41,7 +43,8 @@ internal static class UnityConsentDialog
 {
     private static string SettingsFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "uUnityBridge", "unity-approval.json");
+        "uUnityBridge", Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1" ?
+            "unity-approval-qa.json" : "unity-approval.json");
 
     internal static void Show(IWin32Window owner)
     {
