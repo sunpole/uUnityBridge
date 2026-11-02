@@ -1,7 +1,7 @@
 # Цели, долги, патчи и критерии приёмки uUnityBridge
 
 **Назначение:** единый видимый результат, а не бесконечный цикл инфраструктурных PR.
-**Дата снимка:** 2026-11-01. Состояние подтверждать по GitHub и реальной Unity/Windows проверке.
+**Дата снимка:** 2026-11-02. Состояние подтверждать по GitHub и реальной Unity/Windows проверке.
 
 ## Главная цель
 
@@ -22,7 +22,7 @@ ChatGPT получает пользовательскую задачу на ру
 | 6 — P0011/P0016 | Полный цикл ChatGPT → Unity → результат → ChatGPT | Один настоящий сквозной запрос, проверяемый возврат и повтор без ручных файловых операций |
 
 **Последний стабильный Release:** `v0.4.2`. **P0010:** Draft [PR #25](https://github.com/sunpole/uUnityBridge/pull/25).
-**Начато в коде:** Unity Editor MVP package и команды сцен находятся в [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30); [контрактный Windows CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505), но **Unity Hub/Editor отсутствуют на ПК и сцена в нём не проверялась**. Window capture и ChatGPT→Unity adapter ещё не реализованы. Не отмечать Unity-MVP завершённым по одному CI.
+**Начато в коде:** Unity Editor MVP package и команды сцен находятся в [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30); [контрактный Windows CI PASS](https://github.com/sunpole/uUnityBridge/actions/runs/41339356505), **Unity 6.6 установлен**, но создание/сохранение сцены в нём не проверены. В PR #30 также появились локальные кнопки и типизированный Agent → Unity CLI для `status/create/open`. Они ещё не установлены на ПК; remote GitHub relay и window capture отсутствуют. Не отмечать Unity-MVP завершённым по одному CI.
 
 ## Границы и метод разработки
 
