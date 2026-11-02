@@ -10,7 +10,7 @@ internal static class UnityDiagnosticLog
 {
     private const int MaxLines = 10;
     private const int MaxLineCharacters = 180;
-    private const int MaxEditorTailBytes = 48 * 1024;
+    private const int MaxEditorTailBytes = 512 * 1024;
     private static readonly Regex Secret = new(
         @"(?i)(?:\bBearer\s+\S+|\bgh[pousr]_[A-Za-z0-9_]+|\bgithub_pat_[A-Za-z0-9_]+|\beyJ[A-Za-z0-9_\-]{16,}\.[A-Za-z0-9_\-.]+|\b(?:token|secret|password|api[_-]?key)\s*[:=]\s*\S+)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -101,8 +101,7 @@ internal static class UnityDiagnosticLog
         // expected window is open, and the log was modified during that run.
         if (running.Count != 1 || !IsApprovedEditorProcess(running[0], project))
             return "BLOCKED_EDITOR_IDENTITY";
-        if (lastWriteUtc < running[0].StartedUtc.AddMinutes(-1) ||
-            DateTimeOffset.UtcNow - lastWriteUtc > TimeSpan.FromMinutes(10))
+        if (lastWriteUtc < running[0].StartedUtc.AddMinutes(-1))
             return "BLOCKED_EDITOR_LOG_STALE";
         return "VERIFIED_EXCLUSIVE_RUNNING_EDITOR";
     }
