@@ -30,6 +30,11 @@ jobs:
         run: |
           dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --self-test
           if ($LASTEXITCODE -ne 0) { throw 'Agent protocol self-tests failed.' }
+      - name: Isolated typed Unity CLI policy (no Editor or user files)
+        shell: pwsh
+        run: |
+          dotnet run --project ./tests/uUnityBridge.UnityBridgeTests/uUnityBridge.UnityBridgeTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Unity CLI policy tests failed.' }
       - name: Publish standalone agent preview to CI artifacts only
         shell: pwsh
         run: |
