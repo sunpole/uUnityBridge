@@ -7,6 +7,11 @@
 
 
 
+
+## 2026-11-02 — Agent --diagnose: isElevated=false; qa startup still BLOCKED
+
+Реальный QA Agent 0.2.1-preview из изолированного слота ответил `isElevated=false`; elevated права в этом диагностическом контексте исключены, но `--serve-qa` по-прежнему **не подтверждён**. В Draft PR #30 `0dd2f04fbd93f44157a5167a84d6dee782ae904f` исправлена QA маршрутизация `--request` к отдельному Named Pipe и добавлен QA runtime smoke test с честным пропуском реального E2E на elevated CI runner. Новый CI требуется проверить. Следующее действие — получить **код завершения** отдельного временного QA сервера на старом слоте и не трогать production. Unity UI/логи, .meta reimport, сцена, приватная PNG доставка остаются открыты.
+
 ## 2 ноября 2026 — QA Agent exited unexpectedly (локальный BLOCKED)
 
 После STAGING PASS для `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e` настоящий запуск `Run-Unity-QA.ps1` завершился `BLOCKED: QA Agent exited unexpectedly`. Desktop не открылся, поэтому UNITY · ЛОГИ, шесть .meta после переимпорта и демо-сцена **NOT TESTED**. Исходный launcher не выводил код выхода процесса. В Draft PR #30 коммит `e40f311e89375e6ddf08cf582c14bed38ae44f93` добавляет запрет elevated context, различимые безопасные exit codes и проверку синтаксиса вложенного launcher в Windows CI. **CI ещё в процессе, локальная приёмка не проведена.** Старый тестовый каталог и `uUnityBridge_App` сохраняются, приватный PNG/upload запрещён.
