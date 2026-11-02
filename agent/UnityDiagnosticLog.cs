@@ -55,7 +55,7 @@ internal static class UnityDiagnosticLog
 
     // Unity Editor writes its Console to a known per-user Editor.log on Windows.
     // This is a best-effort excerpt, not a guaranteed live Console subscription.
-    internal static string[] ReadEditorErrors()
+    internal static string[] ReadEditorErrors(string approvedProject)
     {
         string location = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -67,6 +67,16 @@ internal static class UnityDiagnosticLog
                 return [];
             using var stream = new FileStream(location, FileMode.Open, FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete);
+            // Unity Editor.log is global per Windows user: never disclose
+            // its contents if the log cannot be tied to the approved project.
+            int prefixLength = (int)Math.Min(32 * 1024, stream.Length);
+            var prefix = new byte[prefixLength];
+            int got = stream.Read(prefix, 0, prefix.Length);
+            string header = Encoding.UTF8.GetString(prefix, 0, got)
+                .Replace('\\', '/');
+            string approved = Path.GetFullPath(approvedProject).Replace('\\', '/');
+            if (!header.Contains(approved, StringComparison.OrdinalIgnoreCase))
+                return [];
             long count = Math.Min(stream.Length, MaxEditorTailBytes);
             stream.Seek(-count, SeekOrigin.End);
             var buffer = new byte[(int)count];
