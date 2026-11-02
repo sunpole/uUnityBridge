@@ -111,6 +111,15 @@
     — разработка, не установка на ПК. Приватная загрузка PNG выключена.</p>
   </section>
 
+  <section aria-label="QA runtime CI">
+    <h2>QA server: диагностика прав PASS, причина завершения ещё выясняется</h2>
+    <p>Реальный ПК: <code>isElevated=false</code>. Draft PR #30
+    <a href="https://github.com/sunpole/uUnityBridge/commit/67a7c90f92bdb69d08c312299ca4d2e71c9f6f47">67a7c90</a>
+    добавляет QA Pipe routing и исправляет CI обработку ожидаемого отказа
+    elevated Agent. Новые Windows CI проверяются. На ПК QA server/Unity E2E ещё BLOCKED.</p>
+    <p>Рабочая установка не затронута. Приватная передача PNG выключена.</p>
+  </section>
+
   <section aria-label="Текущие версии" class="grid">
     <article class="card"><div class="label">Стабильный Desktop</div><strong>v0.4.2</strong><span><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Опубликован в GitHub</a></span></article>
     <article class="card"><div class="label">Агент на ПК — последняя диагностика</div><strong>v0.2.1</strong><span>Связь status проверена; обновление не подтверждено</span></article>
