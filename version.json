@@ -111,17 +111,26 @@
         },
         "stageCollisionFix": {
           "date": "2026-11-02",
-          "headSha": "c730ad247e6214ce80272ba4133a6d13e994580e",
+          "headSha": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e",
           "commit": "dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2",
-          "status": "implemented_ci_in_progress_local_qa_pending",
+          "status": "ci_pass_local_qa_pending",
           "slotStrategy": "sha12-runId-randomGuid",
           "preservesOldQaFolder": true,
           "script": "scripts/Stage-Unity-QA.ps1",
           "ciRuns": [
-            41492786845,
-            41492786977,
-            41492786941
-          ]
+            41493135234,
+            41493135352,
+            41493135193
+          ],
+          "ciPassed": true,
+          "qaStageRunOnUserPc": false,
+          "realUnityE2eVerified": false,
+          "workflowRunArtifactNames": [
+            "uUnityBridge-windows-x64-ci",
+            "uUnityBridge-agent-p0008-preview"
+          ],
+          "initialCiGuardFalsePositiveRun": 41492786845,
+          "correctedAt": "4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e"
         }
       },
       "qaDiagnosticsCapture": {
@@ -289,6 +298,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "New isolated QA unique-slot script 3/3 Windows CI PASS",
+      "kind": "draft_ci_pass_qa_pending",
+      "result": "PR #30 HEAD 4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e builds Windows Desktop/Agent artifacts and passes QA staging parser, Agent protocol and Unity contract CI. Stage collision fix no longer reuses existing QA folder. No on-PC Unity tests; no private upload; no stable release.",
+      "proof": "https://github.com/sunpole/uUnityBridge/actions/runs/41493135234"
+    },
     {
       "date": "2026-11-02",
       "version": "QA immutable unique slot staging in Draft PR #30",
