@@ -120,7 +120,7 @@ try
         "Unity immutable package no-meta warning is visible in Editor console");
     var editorProcess = new UnityDiagnosticLog.UnityProcess(
         "uUnityDemo - SampleScene - Windows, Mac, Linux - Unity 6.6 (6000.6.7f1) <DX11>",
-        @"C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.7f1\\Editor\\Unity.exe",
+        @"C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe",
         DateTimeOffset.UtcNow.AddMinutes(-5));
     // The exact project may not be in Editor.log's startup header, so
     // corroborate from the exclusive running Editor and a fresh log file.
