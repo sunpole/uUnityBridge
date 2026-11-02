@@ -18,14 +18,29 @@ if ($verified.headSha -ne $ExpectedCommit -or $verified.conclusion -ne 'success'
     throw 'BLOCKED: CI run must be successful Desktop+Agent workflow at the exact approved SHA.'
 }
 
-$qa = Join-Path $env:LOCALAPPDATA ('uUnityBridge-QA\' + $ExpectedCommit.Substring(0,12))
-if (Test-Path -LiteralPath $qa) {
-    throw "BLOCKED: QA folder already exists; refusing to overwrite it: $qa"
+# Every staging attempt has its own immutable QA slot. A partial previous
+# attempt is evidence and must never be overwritten or deleted automatically.
+# The slot name is tied to the verified source SHA and workflow run ID.
+$qaRoot = Join-Path $env:LOCALAPPDATA 'uUnityBridge-QA'
+if (-not (Test-Path -LiteralPath $qaRoot)) {
+    [void](New-Item -ItemType Directory -Path $qaRoot -ErrorAction Stop)
 }
+$qaRootItem = Get-Item -LiteralPath $qaRoot -Force
+if (-not $qaRootItem.PSIsContainer -or
+    ($qaRootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+    throw 'BLOCKED: QA root must be an ordinary local directory.'
+}
+$slotName = ('{0}-{1}-{2}' -f $ExpectedCommit.Substring(0,12), $RunId,
+    [guid]::NewGuid().ToString('N'))
+$qa = Join-Path $qaRoot $slotName
+if (Test-Path -LiteralPath $qa) {
+    throw "BLOCKED: randomly allocated QA slot already exists: $qa"
+}
+[void](New-Item -ItemType Directory -Path $qa -ErrorAction Stop)
 $desktop = Join-Path $qa 'Desktop'
 $agent = Join-Path $qa 'Agent'
-[void](New-Item -ItemType Directory -Path $desktop -Force)
-[void](New-Item -ItemType Directory -Path $agent -Force)
+[void](New-Item -ItemType Directory -Path $desktop -ErrorAction Stop)
+[void](New-Item -ItemType Directory -Path $agent -ErrorAction Stop)
 & gh run download $RunId -R $repo -n 'uUnityBridge-windows-x64-ci' -D $desktop
 if ($LASTEXITCODE -ne 0) { throw 'QA Desktop artifact not available.' }
 & gh run download $RunId -R $repo -n 'uUnityBridge-agent-p0008-preview' -D $agent
