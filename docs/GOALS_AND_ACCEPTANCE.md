@@ -3,6 +3,14 @@
 **Назначение:** единый видимый результат, а не бесконечный цикл инфраструктурных PR.
 **Дата снимка:** 2026-11-02. Состояние подтверждать по GitHub и реальной Unity/Windows проверке.
 
+## Обязательный gate после BLOCKED_QA_SLOT_EXISTS (2026-11-02)
+
+1. **BLOCKED_QA_SLOT_EXISTS:** Stage-Unity-QA.ps1 на SHA `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` / RunId `41485132406` отказался перезаписать уже существующий QA-каталог; не удалять его и не считать это PASS.
+2. **QA provenance:** read-only инвентаризация, SHA256 обоих EXE и независимое сравнение с артефактами ровно данного CI; иначе `BLOCKED_QA_PROVENANCE`.
+3. **Реальный Unity:** в новом QA `UNITY · ЛОГИ` — достоверный CLI/Editor error или честный BLOCKED; pinned UPM с 6 .meta и повторный импорт без предупреждений; Tools → uUnityBridge и созданная/сохранённая сцена с 3 платформами.
+4. **Закрытая доставка:** без явного согласия и проверки приватности/чтения через ChatGPT-коннектор только LOCAL_ONLY, uploadPermitted=false; не отправлять PNG/логи в публичный GitHub.
+5. **PR #25:** Draft и `mergeable=false` на момент проверки; проверить конфликтность и E2E upgrade/rollback отдельно перед выпуском. `uUnityBridge_App` не трогать.
+
 ## Контрольная точка 2026-11-02: проверяемый Unity QA и приватная передача
 
 **Windows CI для проверенного HEAD PR #30 `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` — 3/3 PASS:** [Desktop + Agent №41485132406](https://github.com/sunpole/uUnityBridge/actions/runs/41485132406), [протокол агента №41485132430](https://github.com/sunpole/uUnityBridge/actions/runs/41485132430), [Unity UPM/.meta №41485132420](https://github.com/sunpole/uUnityBridge/actions/runs/41485132420). Артефакты обоих EXE относятся к одному CI №41485132406. **Ни исправленный Unity Editor Console, ни новый pinned UPM Git package на пользовательском ПК повторно не проверены.**
