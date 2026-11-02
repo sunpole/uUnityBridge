@@ -5,6 +5,8 @@ namespace uUnityBridge;
 
 internal sealed class MainForm : Form
 {
+    private static bool IsUnityQa =>
+        Environment.GetEnvironmentVariable("UUB_UNITY_QA") == "1";
     private readonly Button copy = BigButton("ОТЧЁТ · НОВЫХ НЕТ", Color.FromArgb(31, 111, 81));
     private readonly System.Windows.Forms.Timer poller = new() { Interval = 60_000 };
     private bool polling;
@@ -34,9 +36,11 @@ internal sealed class MainForm : Form
 
     internal MainForm()
     {
-        Text = "uUnity Bridge · PATCH / ANS · 0.4.2";
-        MinimumSize = new Size(740, 480);
-        Size = new Size(940, 600);
+        Text = IsUnityQa ?
+            "uUnityBridge · ИЗОЛИРОВАННЫЙ UNITY QA (НЕ РЕЛИЗ)" :
+            "uUnity Bridge · PATCH / ANS · 0.4.2";
+        MinimumSize = IsUnityQa ? new Size(940, 560) : new Size(740, 480);
+        Size = IsUnityQa ? new Size(1250, 730) : new Size(940, 600);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Segoe UI", 10);
         BackColor = Color.FromArgb(241, 244, 249);
@@ -52,7 +56,7 @@ internal sealed class MainForm : Form
         header.Controls.Add(new Label { Text = "uUnity Bridge  ·  PATCH / ANS", Dock = DockStyle.Fill,
             Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold) }, 0, 0);
         header.Controls.Add(rollback, 1, 0);
-        rollback.Visible = ReleaseUpdater.BackupAvailable();
+        rollback.Visible = !IsUnityQa && ReleaseUpdater.BackupAvailable();
         rollback.LinkClicked += (_, _) =>
         {
             try
@@ -68,11 +72,38 @@ internal sealed class MainForm : Form
             }
         };
         grid.Controls.Add(header, 0, 0);
-        var buttons = new TableLayoutPanel { ColumnCount = 1, Dock = DockStyle.Fill };
-        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        // Unity controls are local typed IPC only. This UI does not launch PowerShell,
+        // parse command text or authorize a folder on behalf of GitHub.
+        var buttons = new TableLayoutPanel { ColumnCount = 7, Dock = DockStyle.Fill };
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        for (int i = 0; i < 6; i++)
+            buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.5f));
         buttons.Controls.Add(copy, 0, 0);
+        var unitySettings = BigButton("UNITY · ПАПКА", Color.FromArgb(50, 83, 112));
+        var unityStatus = BigButton("UNITY · СТАТУС", Color.FromArgb(42, 92, 115));
+        var unityCreate = BigButton("UNITY · СОЗДАТЬ", Color.FromArgb(42, 92, 115));
+        var unityOpen = BigButton("UNITY · ОТКРЫТЬ", Color.FromArgb(42, 92, 115));
+        var unityLogs = BigButton("UNITY · ЛОГИ", Color.FromArgb(98, 71, 114));
+        var unityFrame = BigButton("UNITY · КАДР", Color.FromArgb(76, 95, 118));
+        foreach (var button in new[] { unitySettings, unityStatus, unityCreate, unityOpen, unityLogs, unityFrame })
+            button.Font = new Font("Segoe UI Semibold", 9, FontStyle.Bold);
+        buttons.Controls.Add(unitySettings, 1, 0);
+        buttons.Controls.Add(unityStatus, 2, 0);
+        buttons.Controls.Add(unityCreate, 3, 0);
+        buttons.Controls.Add(unityOpen, 4, 0);
+        buttons.Controls.Add(unityLogs, 5, 0);
+        buttons.Controls.Add(unityFrame, 6, 0);
+        unitySettings.Click += (_, _) => UnityConsentDialog.Show(this);
+        unityStatus.Click += async (_, _) => await RunUnityAsync("unity_status");
+        unityCreate.Click += async (_, _) => await RunUnityAsync("unity_project_create");
+        unityOpen.Click += async (_, _) => await RunUnityAsync("unity_project_open");
+        unityLogs.Click += async (_, _) => await RunUnityAsync("unity_diagnostics");
+        unityFrame.Click += (_, _) => CaptureUnityFrame();
         grid.Controls.Add(buttons, 0, 1);
         var split = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1 };
+        // On narrow/remote screens the PATCH list took most of the space and
+        // Unity console appeared hidden at the bottom. QA always prioritizes logs.
+        if (IsUnityQa) split.Panel1Collapsed = true;
         split.Panel1.Controls.Add(patches);
         split.Panel2.Controls.Add(details);
         grid.Controls.Add(split, 0, 2);
@@ -90,7 +121,22 @@ internal sealed class MainForm : Form
 
         Shown += async (_, _) =>
         {
-            if (split.Width > 450) split.SplitterDistance = 310;
+            if (!IsUnityQa && split.Width > 450) split.SplitterDistance = 310;
+            if (IsUnityQa)
+            {
+                // Preview must NOT execute production autopilot, updater,
+                // patch history, answer publication or release checks.
+                copy.Enabled = false;
+                copy.Text = "QA · ОТЧЁТЫ ОТКЛЮЧЕНЫ";
+                details.Text = "РЕЖИМ UNITY QA. Рабочие PATCH/ANS, GitHub polling " +
+                    "и автоматический updater полностью отключены.\r\n" +
+                    "Выберите тестовую папку через UNITY · ПАПКА.\r\n" +
+                    "UNITY · ЛОГИ открывает отдельное большое окно консоли.\r\n" +
+                    "UNITY · КАДР снимает только разрешённое окно Unity.\r\n" +
+                    "Рабочие uUnityBridge_App и Agent не заменяются.";
+                status.Text = "Изолированный режим · локальный QA Agent · никаких GitHub PATCH";
+                return;
+            }
             try
             {
                 var history = PatchHistory.Load();
@@ -111,6 +157,89 @@ internal sealed class MainForm : Form
                 details.Text = e.Message;
             }
         };
+    }
+
+    private void CaptureUnityFrame()
+    {
+        status.Text = "Unity · запрос одного снимка разрешённого окна...";
+        try
+        {
+            string result = UnityWindowCapture.CaptureAndPreview(this);
+            status.Text = result.StartsWith("LOCAL_ONLY", StringComparison.Ordinal) ?
+                "Unity · локальный снимок готов (не отправлен)" :
+                "Unity · снимок заблокирован";
+            details.Text = result + "\r\n\r\nФункция передачи приватного снимка в ChatGPT " +
+                "пока не реализована. Снимок не публиковался в GitHub.";
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or
+            System.Runtime.InteropServices.ExternalException or ArgumentException or
+            System.Text.Json.JsonException or InvalidOperationException or
+            KeyNotFoundException)
+        {
+            status.Text = "Unity · ошибка снимка";
+            details.Text = "Код ошибки: " + e.GetType().Name +
+                "\r\nСнимок в ChatGPT не передавался.";
+        }
+    }
+
+    private void ShowLargeConsole(string report)
+    {
+        using var window = new Form
+        {
+            Text = "uUnityBridge · КОНСОЛЬ UNITY CLI / UNITY EDITOR · только локально",
+            StartPosition = FormStartPosition.CenterParent,
+            Size = new Size(1050, 720),
+            MinimumSize = new Size(660, 440),
+            BackColor = Color.FromArgb(22, 26, 35)
+        };
+        var panel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, Padding = new Padding(12),
+            ColumnCount = 1, RowCount = 2
+        };
+        panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        var console = new TextBox
+        {
+            Dock = DockStyle.Fill, ReadOnly = true, Multiline = true,
+            ScrollBars = ScrollBars.Both, WordWrap = true,
+            Font = new Font("Consolas", 12), Text = report,
+            ForeColor = Color.White, BackColor = Color.FromArgb(22, 26, 35),
+            BorderStyle = BorderStyle.None
+        };
+        var close = new Button
+        {
+            Text = "Закрыть", Dock = DockStyle.Right,
+            Width = 170, Height = 42
+        };
+        close.Click += (_, _) => window.Close();
+        panel.Controls.Add(console, 0, 0);
+        panel.Controls.Add(close, 0, 1);
+        window.Controls.Add(panel);
+        window.ShowDialog(this);
+    }
+
+    private async Task RunUnityAsync(string action)
+    {
+        status.Text = "Unity: запрос к локальному агенту...";
+        try
+        {
+            string result = await UnityLocalClient.RequestAsync(action);
+            details.Text = "Unity · " + action + "\r\n\r\n" + result +
+                "\r\n\r\nРеальную готовность сцены проверяют отдельно в Unity Editor.";
+            status.Text = "Unity: " + (action == "unity_diagnostics" ?
+                "локальный отчёт получен — открыт в отдельном окне" : result);
+            if (action == "unity_diagnostics")
+                ShowLargeConsole(result);
+        }
+        catch (Exception e) when (e is IOException or TimeoutException or
+            InvalidDataException or UnauthorizedAccessException or OperationCanceledException or
+            System.Text.Json.JsonException or InvalidOperationException)
+        {
+            status.Text = "Unity API недоступен";
+            details.Text = "Нужна новая версия Agent с Unity API, запущенная от " +
+                "того же пользователя Windows. Причина: " + e.GetType().Name;
+        }
     }
 
     private async Task PollOnceAsync()

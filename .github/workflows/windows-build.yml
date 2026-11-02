@@ -2,7 +2,7 @@ name: Windows desktop build (uUnityBridge)
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/unity-mvp-editor-foundation]
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -41,6 +41,55 @@ jobs:
             throw 'Wildcard PDB deletion is not permitted'
           }
           Write-Host 'PASS: cleanup parser and exact PDB allowlist'
+      - name: Verify isolated QA stage script syntax and no-overwrite policy
+        shell: powershell
+        run: |
+          $stagePath = (Resolve-Path './scripts/Stage-Unity-QA.ps1').Path
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $stagePath, [ref]$tokens, [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host $_.Message }
+            throw 'Invalid QA stage script syntax'
+          }
+          $body = Get-Content -LiteralPath $stagePath -Raw
+          foreach ($required in @('NewGuid', 'ReparsePoint', 'ExpectedCommit', 'RunId',
+              'Check-QAHash', 'No production EXE')) {
+            if (-not $body.Contains($required)) {
+              throw "Missing QA staging safeguard: $required"
+            }
+          }
+          if ($body -match '(?i)New-Item[^\r\n]*-Force' -or
+              $body -match '(?i)\bRemove-Item\s+(-LiteralPath|-Path)\b|(?<![A-Za-z])Move-Item\b|(?<![A-Za-z])Copy-Item.*uUnityBridge_App') {
+            throw 'QA stage must not force overwrite, remove or move existing files'
+          }
+          Write-Host 'PASS: QA stage syntax and unique no-overwrite slot safeguards'
+          # Also parse the generated launcher; parsing Stage alone does not
+          # validate the PowerShell source inside its single-quoted here-string.
+          $launcherMatch = [regex]::Match($body,
+            '(?s)\$launcher\s*=\s*@''\r?\n(?<script>.*?)\r?\n''@\r?\n\$launcherFile')
+          if (-not $launcherMatch.Success) {
+            throw 'Embedded QA launcher not found'
+          }
+          $launcherTokens = $null
+          $launcherErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseInput(
+            $launcherMatch.Groups['script'].Value,
+            [ref]$launcherTokens, [ref]$launcherErrors
+          ) | Out-Null
+          if ($launcherErrors.Count -gt 0) {
+            throw 'Generated QA launcher has invalid Windows PowerShell syntax'
+          }
+          foreach ($required in @('BLOCKED_QA_ELEVATED_CONTEXT',
+              'BLOCKED_QA_AGENT_ALREADY_RUNNING', 'BLOCKED_QA_AGENT_EXIT_UNKNOWN',
+              '--serve-qa', 'QA Desktop')) {
+            if (-not $launcherMatch.Groups['script'].Value.Contains($required)) {
+              throw "Missing QA launcher diagnostic gate: $required"
+            }
+          }
+          Write-Host 'PASS: generated QA launcher syntax and categorized startup BLOCKED codes'
       - name: Publish portable x64 EXE
         shell: pwsh
         run: |
@@ -55,7 +104,52 @@ jobs:
         shell: pwsh
         run: |
           dotnet run --project ./tests/uUnityBridge.Tests/uUnityBridge.Tests.csproj -c Release
-      - name: Upload unsigned build artifact for testing
+      - name: Verify immutable Unity package metadata before QA build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = './unity/Packages/com.sunpole.uunitybridge'
+          $assets = @('Editor', 'Editor/UnityBridgeEditorCommands.cs',
+            'Editor/UnityBridgePolicy.cs', 'Editor/uUnityBridge.Editor.asmdef',
+            'package.json', 'README.md')
+          $guids = @{}
+          foreach ($asset in $assets) {
+            if (!(Test-Path -LiteralPath "$root/$asset")) { throw "Missing Unity asset: $asset" }
+            $meta = "$root/$asset.meta"
+            if (!(Test-Path -LiteralPath $meta -PathType Leaf)) {
+              throw "Missing Unity .meta: $asset"
+            }
+            $contents = Get-Content -LiteralPath $meta -Raw
+            $match = [regex]::Match($contents, '(?m)^guid: ([0-9a-f]{32})\r?$')
+            if (!$match.Success) { throw "Invalid Unity .meta GUID: $asset" }
+            $id = $match.Groups[1].Value
+            if ($guids.ContainsKey($id)) { throw "Duplicate Unity .meta GUID: $id" }
+            $guids[$id] = $true
+          }
+          Write-Host 'PASS: six immutable Unity package .meta files with unique GUIDs'
+      - name: Validate agent protocol and Unity diagnostic policy
+        shell: pwsh
+        run: |
+          dotnet run --project ./agent/uUnityBridge.Agent.csproj -c Release -- --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'QA Agent self-test failed' }
+          dotnet run --project ./tests/uUnityBridge.UnityBridgeTests/uUnityBridge.UnityBridgeTests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Unity CLI and Editor diagnostic regression tests failed' }
+      - name: Publish matching QA Agent for same commit
+        shell: pwsh
+        run: |
+          dotnet publish ./agent/uUnityBridge.Agent.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o ./dist/agent-preview
+          if ($LASTEXITCODE -ne 0 -or !(Test-Path ./dist/agent-preview/uUnityBridge.Agent.exe)) {
+            throw 'Matching QA Agent artifact missing'
+          }
+          $sha = (Get-FileHash ./dist/agent-preview/uUnityBridge.Agent.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          [System.IO.File]::WriteAllText((Join-Path (Resolve-Path ./dist/agent-preview).Path 'uUnityBridge.Agent.exe.sha256'), $sha + '  uUnityBridge.Agent.exe' + [Environment]::NewLine)
+      - name: Upload matching QA Agent, CI artifact only
+        uses: actions/upload-artifact@v4
+        with:
+          name: uUnityBridge-agent-p0008-preview
+          path: dist/agent-preview/
+          if-no-files-found: error
+      - name: Upload unsigned QA Desktop, CI artifact only
         uses: actions/upload-artifact@v4
         with:
           name: uUnityBridge-windows-x64-ci
