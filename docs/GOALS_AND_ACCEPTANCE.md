@@ -3,6 +3,14 @@
 **Назначение:** единый видимый результат, а не бесконечный цикл инфраструктурных PR.
 **Дата снимка:** 2026-11-02. Состояние подтверждать по GitHub и реальной Unity/Windows проверке.
 
+
+## QA stage collision: исправление в PR, приёмка ещё обязательна (2026-11-02)
+
+- [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30), HEAD `c730ad247e6214ce80272ba4133a6d13e994580e`: новый `Stage-Unity-QA.ps1` выделяет уникальный отдельный QA-слот для каждой попытки, сохраняя старые файлы. Проверка синтаксиса и запрета overwrite добавлена в Windows build workflow.
+- [Desktop+Agent CI #41492786845](https://github.com/sunpole/uUnityBridge/actions/runs/41492786845) **ещё выполнялся при записи**. Проверить финальный результат и два других CI ровно на этом SHA, затем безопасно stage+QA на ПК.
+- `BLOCKED_QA_SLOT_EXISTS` документально обработан кодом, но **реальный запуск нового staging, Unity logs, UPM reimport, scene E2E ещё не подтверждены**.
+- Приватный upload PNG по-прежнему запрещён (`LOCAL_ONLY`, `uploadPermitted=false`), PR #25 не выпускать до E2E доставки и rollback.
+
 ## Обязательный gate после BLOCKED_QA_SLOT_EXISTS (2026-11-02)
 
 1. **BLOCKED_QA_SLOT_EXISTS:** Stage-Unity-QA.ps1 на SHA `2ef31bc8fb75694c77ed0e977bb4ff157a983ff6` / RunId `41485132406` отказался перезаписать уже существующий QA-каталог; не удалять его и не считать это PASS.
