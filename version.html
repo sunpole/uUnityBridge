@@ -101,6 +101,16 @@
     <code>LOCAL_ONLY</code>, <code>uploadPermitted=false</code>.</p>
   </section>
 
+  <section aria-label="Диагностика прав QA">
+    <h2>QA Agent: права обычного пользователя подтверждены, старт ещё BLOCKED</h2>
+    <p>2 ноября 2026: реальный <code>--diagnose</code> из staged QA-сборки вернул
+    <code>isElevated=false</code>. Следовательно, права администратора не объясняют
+    прежний ранний выход в этом пользовательском контексте; код завершения сервера неизвестен.
+    Desktop/Unity Editor E2E не выполнен.</p>
+    <p><a href="https://github.com/sunpole/uUnityBridge/commit/0dd2f04fbd93f44157a5167a84d6dee782ae904f">PR #30: QA health runtime проверка</a>
+    — разработка, не установка на ПК. Приватная загрузка PNG выключена.</p>
+  </section>
+
   <section aria-label="Текущие версии" class="grid">
     <article class="card"><div class="label">Стабильный Desktop</div><strong>v0.4.2</strong><span><a href="https://github.com/sunpole/uUnityBridge/releases/tag/v0.4.2">Опубликован в GitHub</a></span></article>
     <article class="card"><div class="label">Агент на ПК — последняя диагностика</div><strong>v0.2.1</strong><span>Связь status проверена; обновление не подтверждено</span></article>
