@@ -5,12 +5,18 @@ on:
     branches: [main]
     paths:
       - 'agent/**'
+      - 'scripts/Stage-Unity-QA.ps1'
+      - 'src/UnityControlUi.cs'
+      - 'src/MainForm.cs'
       - '.github/workflows/agent-windows.yml'
       - 'docs/P0008_AGENT_FOUNDATION.md'
   push:
     branches: [main]
     paths:
       - 'agent/**'
+      - 'scripts/Stage-Unity-QA.ps1'
+      - 'src/UnityControlUi.cs'
+      - 'src/MainForm.cs'
       - '.github/workflows/agent-windows.yml'
   workflow_dispatch:
 
@@ -35,6 +41,26 @@ jobs:
         run: |
           dotnet run --project ./tests/uUnityBridge.UnityBridgeTests/uUnityBridge.UnityBridgeTests.csproj -c Release
           if ($LASTEXITCODE -ne 0) { throw 'Unity CLI policy tests failed.' }
+      - name: Verify isolated Unity QA launcher and no-production-poll safeguards
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $file = (Resolve-Path './scripts/Stage-Unity-QA.ps1').Path
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            $file, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { throw 'Unity QA staging script has parser errors' }
+          $agentCode = Get-Content ./agent/Program.cs -Raw
+          $desktopCode = Get-Content ./src/MainForm.cs -Raw
+          $ipcCode = Get-Content ./src/UnityControlUi.cs -Raw
+          if (!$agentCode.Contains('--serve-qa') -or
+              !$agentCode.Contains('qaServe ? Task.CompletedTask') -or
+              !$desktopCode.Contains('if (IsUnityQa)') -or
+              !$ipcCode.Contains('uUnityBridge.agent.qa.v1')) {
+            throw 'QA isolation contract removed from Agent or Desktop'
+          }
+          Write-Host 'PASS: QA parser and separate current-user pipe / no GitHub relay'
       - name: Publish standalone agent preview to CI artifacts only
         shell: pwsh
         run: |
