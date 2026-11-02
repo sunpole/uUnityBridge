@@ -69,7 +69,7 @@ jobs:
           # Also parse the generated launcher; parsing Stage alone does not
           # validate the PowerShell source inside its single-quoted here-string.
           $launcherMatch = [regex]::Match($body,
-            "(?s)\\\$launcher\\s*=\\s*@'\\r?\\n(?<script>.*?)\\r?\\n'@\\r?\\n\\\$launcherFile")
+            '(?s)\$launcher\s*=\s*@''\r?\n(?<script>.*?)\r?\n''@\r?\n\$launcherFile')
           if (-not $launcherMatch.Success) {
             throw 'Embedded QA launcher not found'
           }
