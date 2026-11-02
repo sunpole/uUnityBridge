@@ -39,7 +39,7 @@
       "pullRequest": 30,
       "url": "https://github.com/sunpole/uUnityBridge/pull/30",
       "state": "draft",
-      "referenceCommit": "e202f4d2816770cd5d248d0ad6e42ff01fc3217a",
+      "referenceCommit": "c24db4340e6569258103eba34e49fd3455776e31",
       "packageVersion": "0.1.0",
       "commands": [
         "unity_status",
@@ -75,7 +75,7 @@
       "installedOnUserPc": false,
       "realUnityCliE2eVerified": false,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "referenceCommit": "e202f4d2816770cd5d248d0ad6e42ff01fc3217a",
+      "referenceCommit": "c24db4340e6569258103eba34e49fd3455776e31",
       "windowsCi": {
         "agent": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979594",
         "desktop": "https://github.com/sunpole/uUnityBridge/actions/runs/41443979385",
@@ -125,8 +125,18 @@
         "screenshotTransport": "local-only",
         "screenshotUploadedToChatGPT": false,
         "editorLogMustMatchApprovedProject": true,
-        "realPcQaVerified": false,
-        "remotePrivateDeliveryImplemented": false
+        "realPcQaVerified": true,
+        "remotePrivateDeliveryImplemented": false,
+        "realPcScreenshotVerified": true,
+        "localScreenshotProof": "User screenshot in ChatGPT on 2026-11-02: Unity window 1936x1056 captured, sha256 prefix 5f000f273225943d",
+        "realPcConsoleErrorsVisibleButDiagnosticsMissing": true,
+        "diagnosticPatchDraftHead": "c24db4340e6569258103eba34e49fd3455776e31",
+        "diagnosticPatchCiPending": true,
+        "metaFilesFixedInDraft": true,
+        "metaFixRealUnityVerified": false,
+        "largeConsoleDialogFixedInDraft": true,
+        "privateDeliveryVerified": false,
+        "realPcEditorConsoleReadVerified": false
       }
     }
   },
@@ -186,15 +196,15 @@
       "status": "ci_pass_qa_pending",
       "blocking": true,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "next": "Download exact CI artifacts into QA directory and test GUI create/open via separate QA pipe on user Windows; installed production remains unchanged."
+      "next": "Unity 6.6 and QA installed; Unity status PASS and project open; Editor command create_scene unverified. Unity UPM .meta fixes in PR #30 need reimport E2E."
     },
     {
       "id": "P0015",
       "name": "Приватный скриншот только окна Unity",
-      "status": "ci_pass_qa_pending",
+      "status": "qa_local_capture_pass_remote_pending",
       "blocking": true,
       "proof": "https://github.com/sunpole/uUnityBridge/pull/30",
-      "next": "Испытать QA кнопку кадра, затем закрытое хранилище доступное ChatGPT и настоящее E2E."
+      "next": "User confirmed local capture of permitted Unity window; next verify private upload via connector and readable screenshot in ChatGPT. QA Editor log blank despite visible warnings is being fixed."
     },
     {
       "id": "P0016",
@@ -206,6 +216,13 @@
     }
   ],
   "history": [
+    {
+      "date": "2026-11-02",
+      "version": "P0015: first real QA screen capture PASS; Editor diagnostics bug and package .meta patch in Draft",
+      "kind": "local_qa_partial",
+      "result": "User proved uUnityBridge QA captured Unity Editor 1936x1056 locally; Unity Console shows missing .meta warnings, but QA diagnostics wrongly showed no errors. Six immutable-package .meta added and log provenance fallback and larger GUI console implemented in PR #30; CI/real QA not yet concluded. No automatic private screenshot delivery.",
+      "proof": "https://github.com/sunpole/uUnityBridge/pull/30"
+    },
     {
       "date": "2026-11-02",
       "version": "QA local Unity diagnostics and window screenshot",
