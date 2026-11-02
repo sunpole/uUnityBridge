@@ -4,6 +4,15 @@
 [Машинная история](version.json) · [Наглядная HTML-страница](version.html) · [План и критерии](docs/GOALS_AND_ACCEPTANCE.md) · [Правила проекта](AGENTS.md).
 
 
+
+## 2026-11-02 — QA staging patch: CI 3/3 PASS, приёмка ПК остаётся
+
+[Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) HEAD `4ed8ca798d89fb0d6d7f90a10a78f9dfe940569e`: исправлено создание уникального QA-слота на каждый успешный RunId/SHA без overwrite старого `2ef31bc8fb75`. Первое выполнение добавленного CI guard на `c730ad247e6214ce80272ba4133a6d13e994580e` упало из-за ложного regex-совпадения `Move-Item` внутри `Remove-Item`; guard исправлен коммитом `4ed8ca7`.
+
+**Верификация текущего HEAD GitHub Actions: 3/3 PASS:** [Desktop+Agent #41493135234](https://github.com/sunpole/uUnityBridge/actions/runs/41493135234), [Agent #41493135352](https://github.com/sunpole/uUnityBridge/actions/runs/41493135352), [Unity contract #41493135193](https://github.com/sunpole/uUnityBridge/actions/runs/41493135193). В Desktop workflow находятся **оба** артефакта `uUnityBridge-windows-x64-ci` и `uUnityBridge-agent-p0008-preview`. Проверка PowerShell 5.1 нового Stage прошла на Windows CI. **Не является** фактом исполнения на ПК; старый QA-слот нельзя удалять, `uUnityBridge_App` не изменять.
+
+**Следующий реальный E2E:** stage только из run #41493135234 и SHA выше, проверить обе локальные хеш-суммы и Agent self-test, открыть QA; проверить `UNITY · ЛОГИ` (реальные CLI/Editor ошибки либо честный BLOCKED); обновить pinned Unity UPM Git package с шестью .meta, проверить исчезновение предупреждений; `Tools → uUnityBridge`, три платформы и сохранение/повторное открытие сцены. Снимок и отчёт остаются `LOCAL_ONLY` без upload до разрешения на закрытое хранилище. PR #25 остаётся Draft до отдельного E2E доставки/отката.
+
 ## 2026-11-02 — исправление Stage QA в Draft PR, CI ещё выполняется
 
 В [Draft PR #30](https://github.com/sunpole/uUnityBridge/pull/30) исправлен сценарий `Stage-Unity-QA.ps1`: при проверенном `ExpectedCommit` и успешном `RunId` **каждая попытка теперь использует отдельную уникальную тестовую папку** (`SHA12-RunId-GUID`); старый слот `2ef31bc8fb75` не удаляется и не перезаписывается. Защита от junction/symlink корневого QA-каталога и проверка SHA-256 Desktop/Agent сохранены. В `windows-build.yml` добавлена проверка синтаксиса PowerShell 5.1 и статических правил против перезаписи/удаления. Коммиты: [dfb4d6b](https://github.com/sunpole/uUnityBridge/commit/dfb4d6bfc52506392938f4ebaa4b628c3f2f04a2) → [c730ad2](https://github.com/sunpole/uUnityBridge/commit/c730ad247e6214ce80272ba4133a6d13e994580e). Windows CI на этом HEAD запущены: [Desktop+Agent #41492786845](https://github.com/sunpole/uUnityBridge/actions/runs/41492786845), [Agent #41492786977](https://github.com/sunpole/uUnityBridge/actions/runs/41492786977), [Unity contract #41492786941](https://github.com/sunpole/uUnityBridge/actions/runs/41492786941). **На момент записи CI ещё выполняется, локальная QA НЕ пройдена**. Не объявлять реализацию PASS до результатов CI и проверки на ПК. `uUnityBridge_App` не затронута.
