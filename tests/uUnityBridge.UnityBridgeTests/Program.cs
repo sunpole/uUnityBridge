@@ -34,7 +34,7 @@ try
         {
             "--no-banner", "--non-interactive", "projects", "create",
             "uUnityDemo", "--template", "2d", "--editor-version",
-            "6000.6.7f1", "--no-cloud"
+            "6000.6.7f1", "--no-cloud", "--with-pipeline"
         }), "project creation uses only approved folder/name/2D/version and no cloud");
     var status = UnityCliPolicy.Build("unity_status", profile);
     Check(!status.ChangesFiles &&
