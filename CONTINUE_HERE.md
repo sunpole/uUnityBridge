@@ -11,6 +11,15 @@
 
 
 
+
+## 2026-11-02 — проверка QA IPC в GitHub CI, коррекция ожидаемого кода выхода
+
+**Подтверждённый ПК:** старый QA Agent `--diagnose` вернул `isElevated=false`. Причина прежнего `QA Agent exited unexpectedly` НЕ установлена без exit code от `--serve-qa`. **Никакого нового запуска, переимпорта UPM, Editor Console или сцены не подтверждено.**
+
+**Изменения Draft PR #30** для корректного QA runtime теста: `47b7216` направляет QA `--request` к изолированному QA Pipe при `UUB_UNITY_QA=1`. `0dd2f04` добавил runtime тест `--serve-qa`: обязательный блок без QA флага (exit 2), а на elevated GitHub runner — обязательный отказ exit 5 вместо ложного QA PASS. Первое выполнение [Agent #41502830937](https://github.com/sunpole/uUnityBridge/actions/runs/41502830937) формально **FAIL** из-за сохранённого ожидаемого native exit 5 в GitHub pwsh wrapper даже после успешной проверки отказа. Коммит [67a7c90](https://github.com/sunpole/uUnityBridge/commit/67a7c90f92bdb69d08c312299ca4d2e71c9f6f47) очищает `LASTEXITCODE` **только после проверки** кода блокировки, не убирает саму защиту. Проверить результаты новых трёх CI: [Desktop #41503208005](https://github.com/sunpole/uUnityBridge/actions/runs/41503208005), [Agent #41503207919](https://github.com/sunpole/uUnityBridge/actions/runs/41503207919), [Unity #41503208078](https://github.com/sunpole/uUnityBridge/actions/runs/41503208078). На момент документирования они выполнялись. **CI PASS сам по себе не означает проверку QA на пользовательском ПК.**
+
+**Безопасный следующий шаг:** на **старом** QA Agent из уже проверенного immutable слота отдельно запустить `--serve-qa` с локальным `UUB_UNITY_QA=1` и узнать только `ExitCode` через 2 секунды либо `QA_RUNNING=true`; если процесс всё ещё работает, завершить только его PID и восстановить переменную среды. Это не новая установка и не изменение рабочего агента. Затем исправлять подтверждённую причину, а не предполагать elevated. Не трогать `uUnityBridge_App`, PR #25 Draft/rollback, Issue #23; PNG/report остаются `LOCAL_ONLY`, `uploadPermitted=false`.
+
 ## 2026-11-02 — QA elevation excluded by real PC diagnostic; cause of early Agent exit still unknown
 
 **Новый локальный вывод пользователя:** `uUnityBridge.Agent.exe --diagnose` из ранее staged QA-слота `4ed8ca798d89-41493135234-fe5f780e77d949889e53d35399916f35` вернул `{"service":"uUnityBridge.Agent","version":"0.2.1-preview","isElevated":false,"expectedExecution":"same standard Windows user/session for server and client"}`. **Это проверка прав диагностического процесса**, не запуск `--serve-qa`; в этом пользовательском контексте elevated-прав нет. Старый launcher **реально** выдавал `BLOCKED: QA Agent exited unexpectedly`, но не сообщал exit code. **Причина остаётся UNKNOWN**. Не записывать `BLOCKED_QA_ELEVATED_CONTEXT` как установленную причину. Desktop ещё не открылся; `UNITY · ЛОГИ`, reimport шести .meta, Tools → uUnityBridge, сцена и повторное открытие **не проверены**.
