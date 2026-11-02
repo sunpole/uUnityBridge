@@ -79,7 +79,7 @@ try {
     # silently bypass CurrentUserOnly Named Pipe security.
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     try {
-        $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+        $principal = [System.Security.Principal.WindowsPrincipal]::new($identity)
         if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
             throw 'BLOCKED_QA_ELEVATED_CONTEXT: run PowerShell without administrator rights.'
         }
