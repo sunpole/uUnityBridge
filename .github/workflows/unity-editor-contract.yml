@@ -61,13 +61,7 @@ jobs:
               throw "Missing Unity .meta in immutable package: $($item.FullName)"
             }
             $content = Get-Content -LiteralPath $meta -Raw
-            $match = [regex]::Match($content, '(?m)^guid: ([0-9a-f]{32})
-        shell: pwsh
-        run: |
-          dotnet run --project ./tests/uUnityBridge.UnityContractTests/uUnityBridge.UnityContractTests.csproj -c Release
-          if ($LASTEXITCODE -ne 0) { throw 'Unity command contract checks failed' }
-          Write-Host 'PASS: static policy only; real Unity Editor E2E still required'
-)
+            $match = [regex]::Match($content, '(?m)^guid: ([0-9a-f]{32})\r?$')
             if (!$match.Success) { throw "Invalid Unity meta GUID: $meta" }
             $guid = $match.Groups[1].Value
             if ($guids.ContainsKey($guid)) { throw "Duplicate Unity meta GUID: $guid" }
