@@ -115,6 +115,34 @@ try
     Check(!UnityDiagnosticLog.HeaderMatchesApprovedProject(
         "Unity Editor start -projectPath C:/other/Project\n", profile.Project),
         "Unrelated Unity Editor logs rejected");
+    string metaWarning = "Asset Packages/com.sunpole.uunitybridge/Editor has no meta file, but it's in an immutable folder. The asset will be ignored.";
+    Check(UnityDiagnosticLog.Excerpt(metaWarning, true).Length == 1,
+        "Unity immutable package no-meta warning is visible in Editor console");
+    var editorProcess = new UnityDiagnosticLog.UnityProcess(
+        "uUnityDemo - SampleScene - Windows, Mac, Linux - Unity 6.6 (6000.6.7f1) <DX11>",
+        @"C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.7f1\\Editor\\Unity.exe",
+        DateTimeOffset.UtcNow.AddMinutes(-5));
+    // The exact project may not be in Editor.log's startup header, so
+    // corroborate from the exclusive running Editor and a fresh log file.
+    string verified = UnityDiagnosticLog.ValidateLogSource(
+        "Unity Editor startup (no projectPath line)", profile.Project,
+        new[] { editorProcess }, DateTimeOffset.UtcNow);
+    Check(verified == "VERIFIED_EXCLUSIVE_RUNNING_EDITOR",
+        "Editor.log accepted for exclusive approved Unity project and fresh session");
+    Check(UnityDiagnosticLog.ValidateLogSource(
+        "No project path", profile.Project,
+        new[] { editorProcess, editorProcess }, DateTimeOffset.UtcNow) ==
+        "BLOCKED_EDITOR_IDENTITY", "multiple Editor processes cannot expose log");
+    var unrelatedEditor = editorProcess with {
+        Title = "AnotherProject - SampleScene - Unity 6.6"
+    };
+    Check(UnityDiagnosticLog.ValidateLogSource(
+        "No path", profile.Project, new[] { unrelatedEditor }, DateTimeOffset.UtcNow) ==
+        "BLOCKED_EDITOR_IDENTITY", "different project's console is never read");
+    Check(UnityDiagnosticLog.ValidateLogSource(
+        "No path", profile.Project, new[] { editorProcess },
+        DateTimeOffset.UtcNow.AddHours(-2)) == "BLOCKED_EDITOR_LOG_STALE",
+        "stale Unity Editor log cannot be reported as current");
     Console.WriteLine($"PASS: {assertions} isolated Unity CLI policy checks. No Editor launched.");
 }
 finally
